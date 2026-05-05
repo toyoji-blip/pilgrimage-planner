@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>巡礼プランナー v0.1</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f5f2ea;
+      color: #333;
+    }
+    header {
+      background: #3b3a30;
+      color: #f5f2ea;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    header small {
+      opacity: 0.7;
+      font-size: 11px;
+    }
+    nav {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #e0d8c8;
+      border-bottom: 1px solid #c8bda8;
+    }
+    nav button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #b0a58f;
+      background: #f5f2ea;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    nav button.active {
+      background: #3b3a30;
+      color: #f5f2ea;
+    }
+    main {
+      padding: 12px;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      border-left: 4px solid #3b3a30;
+      padding-left: 8px;
+    }
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 6px;
+      font-size: 13px;
+      margin-top: 2px;
+      border-radius: 3px;
+      border: 1px solid #b0a58f;
+      background: #fffdf7;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .row > div {
+      flex: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+      background: #fffdf7;
+    }
+    th, td {
+      border: 1px solid #d0c6b3;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: #e8e0d0;
+    }
+    .btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 3px;
+      border: 1px solid #8a7b5a;
+      background: #f5f2ea;
+      cursor: pointer;
+    }
+    .btn-small {
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+    .btn-primary {
+      background: #3b3a30;
+      color: #f5f2ea;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid transparent;
+    }
+    .pill-train { background:#e0ecff; border-color:#6b8fd6; }
+    .pill-bus   { background:#fff4c2; border-color:#d6b86b; }
+    .pill-walk  { background:#f0e0ff; border-color:#a27bd6; }
+    .pill-other { background:#e2e2e2; border-color:#9a9a9a; }
+    pre {
+      background:#1e1e1e;
+      color:#f5f5f5;
+      padding:8px;
+      font-size:11px;
+      overflow:auto;
+    }
+    .flex {
+      display:flex;
+      gap:8px;
+    }
+    .flex > div {
+      flex:1;
+    }
+    .seg-row {
+      border:1px solid #d0c6b3;
+      padding:6px;
+      margin-top:4px;
+      background:#fffdf7;
+    }
+    .seg-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+      margin-bottom:4px;
+    }
+    .seg-body {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:11px;
+    }
+    .seg-body input[type="time"] {
+      width:90px;
+    }
+    .seg-body select {
+      width:110px;
+    }
+    .handle {
+      cursor:grab;
+      font-size:14px;
+      padding:0 4px;
+    }
+    .badge {
+      display:inline-block;
+      padding:1px 4px;
+      font-size:10px;
+      border-radius:3px;
+      background:#3b3a30;
+      color:#f5f2ea;
+      margin-left:4px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>巡礼プランナー</h1>
+    <small>札所マスタ・日程編集・プレビュー（localStorage保存）</small>
+  </div>
+  <div>
+    <button class="btn btn-small" id="btnSave">保存</button>
+    <button class="btn btn-small" id="btnLoad">再読込</button>
+    <button class="btn btn-small" id="btnExport">JSON出力</button>
+    <input type="file" id="fileImport" style="display:none">
+    <button class="btn btn-small" id="btnImport">JSON読込</button>
+  </div>
+</header>
+
+<nav>
+  <button data-target="sec-config" class="active">① 巡礼設定</button>
+  <button data-target="sec-master">② 札所マスタ</button>
+  <button data-target="sec-schedule">③ 日程編集</button>
+  <button data-target="sec-preview">④ プレビュー</button>
+  <button class="btn btn-small" id="btnGenerateViewer">ビューアHTML生成 </button>
+</nav>
+
+<main>
+  <!-- ① 巡礼設定 -->
+  <section id="sec-config" class="section active">
+    <h2>① 巡礼設定</h2>
+    <label>巡礼名
+      <input type="text" id="pilgrimageName" placeholder="例：三浦三十三観音">
+    </label>
+    <label>出発地
+      <input type="text" id="startLocation" placeholder="例：恵比寿駅">
+    </label>
+    <label>メモ
+      <textarea id="pilgrimageNote" placeholder="全体メモなど"></textarea>
+    </label>
+  </section>
+
+  <!-- ② 札所マスタ -->
+  <section id="sec-master" class="section">
+    <h2>② 札所マスタ管理</h2>
+    <div class="row">
+      <div>
+        <label>番号
+          <input type="text" id="siteNumber" placeholder="例：1">
+        </label>
+      </div>
+      <div>
+        <label>名称
+          <input type="text" id="siteName" placeholder="例：三樹院">
+        </label>
+      </div>
+    </div>
+    <label>住所
+      <input type="text" id="siteAddress" placeholder="例：神奈川県三浦市...">
+    </label>
+    <div style="margin-top:4px;">
+      <button class="btn btn-small" id="btnSearchAddress">住所検索（Google Mapsを開く）</button>
+    </div>
+    <label>メモ
+      <textarea id="siteNote" placeholder="補足情報など"></textarea>
+    </label>
+    <div style="margin-top:6px;">
+      <button class="btn btn-primary btn-small" id="btnAddSite">札所を追加</button>
+      <button class="btn btn-small" id="btnClearSiteForm">入力クリア</button>
+    </div>
+
+    <h3 style="margin-top:14px;font-size:14px;">札所一覧</h3>
+    <table id="tblSites">
+
+      <thead>
+        <tr>
+            <th style="width:40px;">番号</th>
+            <th style="width:140px;">名称</th>
+            <th style="width:200px;">住所</th>
+            <th style="width:180px;">メモ</th>
+             <th style="width:80px;">操作</th>
+         </tr>
+    </thead>
+
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ③ 日程編集 -->
+  <section id="sec-schedule" class="section">
+    <h2>③ 日程編集</h2>
+    <div class="row">
+      <div>
+        <label>日程名
+          <input type="text" id="dayName" placeholder="例：1日目">
+        </label>
+      </div>
+      <div style="align-self:flex-end;">
+        <button class="btn btn-primary btn-small" id="btnAddDay">日程タブ追加</button>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <label>日程選択
+        <select id="daySelect"></select>
+      </label>
+    </div>
+
+    <div style="margin-top:8px;">
+      <label>札所追加
+        <select id="siteSelect"></select>
+      </label>
+      <button class="btn btn-small" id="btnAddSegment">経路セグメント追加</button>
+    </div>
+
+    <div id="segmentsContainer" style="margin-top:8px;">
+      <!-- セグメント行がここに並ぶ -->
+    </div>
+
+    <p style="font-size:11px;margin-top:8px;">
+      ※ 行の左端「≡」をドラッグして順番を入れ替え（簡易実装：上下ボタンで代用可）
+    </p>
+  </section>
+
+  <!-- ④ プレビュー -->
+  <section id="sec-preview" class="section">
+    <h2>④ プレビュー・JSON</h2>
+    <div class="flex">
+      <div>
+        <h3 style="font-size:14px;">巡礼概要</h3>
+        <div id="previewSummary" style="font-size:13px;"></div>
+
+        <h3 style="font-size:14px;margin-top:10px;">日程プレビュー</h3>
+        <div id="previewSchedule" style="font-size:12px;"></div>
+      </div>
+      <div>
+        <h3 style="font-size:14px;">JSON</h3>
+        <pre id="jsonOutput"></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+
+<script>
+  // データ構造
+  const state = {
+    pilgrimage: {
+      name: "",
+      startLocation: "",
+      note: ""
+    },
+    sites: [], // {id, number, name, address, note}
+    days: []   // {id, name, segments:[{id, siteId, mode, memo, departTime, arriveTime}]}
+  };
+
+  const MODES = [
+    { id: "train", label: "電車", icon: "🚃", pillClass: "pill-train", mapsMode: "transit" },
+    { id: "bus",   label: "バス", icon: "🚌", pillClass: "pill-bus",   mapsMode: "transit" },
+    { id: "walk",  label: "徒歩", icon: "🚶", pillClass: "pill-walk",  mapsMode: "walking" },
+    { id: "other", label: "その他", icon: "🚢", pillClass: "pill-other", mapsMode: "transit" }
+  ];
+
+  // DOM
+  const navButtons = document.querySelectorAll("nav button");
+  const sections = document.querySelectorAll(".section");
+
+  const pilgrimageName = document.getElementById("pilgrimageName");
+  const startLocation = document.getElementById("startLocation");
+  const pilgrimageNote = document.getElementById("pilgrimageNote");
+
+  const siteNumber = document.getElementById("siteNumber");
+  const siteName = document.getElementById("siteName");
+  const siteAddress = document.getElementById("siteAddress");
+  const siteNote = document.getElementById("siteNote");
+  const tblSitesBody = document.querySelector("#tblSites tbody");
+
+  const dayName = document.getElementById("dayName");
+  const daySelect = document.getElementById("daySelect");
+  const siteSelect = document.getElementById("siteSelect");
+  const segmentsContainer = document.getElementById("segmentsContainer");
+
+  const previewSummary = document.getElementById("previewSummary");
+  const previewSchedule = document.getElementById("previewSchedule");
+  const jsonOutput = document.getElementById("jsonOutput");
+
+  // ナビ切り替え
+  navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      navButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = btn.dataset.target;
+      sections.forEach(sec => {
+        sec.classList.toggle("active", sec.id === target);
+      });
+      // --- ここに以下の処理を追加 ---
+    if (target === "sec-schedule") {
+      renderSiteSelect(); // 日程編集タブを開いた時にリストを更新
+    }
+    if (target === "sec-preview") {
+      renderPreview();
+    }
+      if (target === "sec-preview") {
+        renderPreview();
+      }
+    });
+  });
+
+  // 巡礼設定
+  function bindPilgrimageInputs() {
+    pilgrimageName.value = state.pilgrimage.name;
+    startLocation.value = state.pilgrimage.startLocation;
+    pilgrimageNote.value = state.pilgrimage.note;
+
+    pilgrimageName.addEventListener("input", () => {
+      state.pilgrimage.name = pilgrimageName.value;
+    });
+    startLocation.addEventListener("input", () => {
+      state.pilgrimage.startLocation = startLocation.value;
+    });
+    pilgrimageNote.addEventListener("input", () => {
+      state.pilgrimage.note = pilgrimageNote.value;
+    });
+  }
+
+  // 札所マスタ
+  function renderSites() {
+  tblSitesBody.innerHTML = "";
+
+  state.sites.forEach(site => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${site.number || ""}</td>
+      <td>${site.name || ""}</td>
+      <td>${site.address || ""}</td>
+      <td>${(site.note || "").slice(0,40)}${site.note && site.note.length>40 ? "…" : ""}</td>
+      <td>
+        <button class="btn btn-small btn-up-site" data-id="${site.id}">↑</button>
+        <button class="btn btn-small btn-down-site" data-id="${site.id}">↓</button>
+        <button class="btn btn-small btn-edit" data-id="${site.id}">編集</button>
+        <button class="btn btn-small btn-del" data-id="${site.id}">削除</button>
+      </td>
+    `;
+
+    tblSitesBody.appendChild(tr);
+  });
+
+  // 編集
+  tblSitesBody.querySelectorAll(".btn-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const site = state.sites.find(s => s.id === id);
+      if (!site) return;
+
+      siteNumber.value = site.number || "";
+      siteName.value = site.name || "";
+      siteAddress.value = site.address || "";
+      siteNote.value = site.note || "";
+      siteNumber.dataset.editId = id;
+    });
+  });
+
+  // 削除
+  tblSitesBody.querySelectorAll(".btn-del").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const idx = state.sites.findIndex(s => s.id === id);
+      if (idx >= 0) {
+        state.sites.splice(idx, 1);
+
+        // 日程内の参照も削除
+        state.days.forEach(d => {
+          d.segments = d.segments.filter(seg => seg.siteId !== id);
+        });
+
+        renderSites();
+        renderSiteSelect();
+        renderSegments();
+      }
+    });
+  });
+
+  // 並べ替え（↑）
+  tblSitesBody.querySelectorAll(".btn-up-site").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const idx = state.sites.findIndex(s => s.id === id);
+      if (idx > 0) {
+        const tmp = state.sites[idx - 1];
+        state.sites[idx - 1] = state.sites[idx];
+        state.sites[idx] = tmp;
+        renderSites();
+      }
+    });
+  });
+
+  // 並べ替え（↓）
+  tblSitesBody.querySelectorAll(".btn-down-site").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const idx = state.sites.findIndex(s => s.id === id);
+      if (idx < state.sites.length - 1) {
+        const tmp = state.sites[idx + 1];
+        state.sites[idx + 1] = state.sites[idx];
+        state.sites[idx] = tmp;
+        renderSites();
+      }
+    });
+  });
+}
+
+
+
+  function renderSiteSelect() {
+    siteSelect.innerHTML = "";
+    const optEmpty = document.createElement("option");
+    optEmpty.value = "";
+    optEmpty.textContent = "札所を選択";
+    siteSelect.appendChild(optEmpty);
+
+    state.sites
+      .slice()
+      .sort((a,b) => (a.number || "").localeCompare(b.number || "", "ja", {numeric:true}))
+      .forEach(site => {
+        const opt = document.createElement("option");
+        opt.value = site.id;
+        opt.textContent = `${site.number || ""} ${site.name || ""}`;
+        siteSelect.appendChild(opt);
+      });
+  }
+
+  document.getElementById("btnAddSite").addEventListener("click", () => {
+    const num = siteNumber.value.trim();
+    const name = siteName.value.trim();
+    const addr = siteAddress.value.trim();
+    const note = siteNote.value.trim();
+
+    if (!name) {
+      alert("名称は必須");
+      return;
+    }
+
+    const editId = siteNumber.dataset.editId;
+    if (editId) {
+      const site = state.sites.find(s => s.id === editId);
+      if (site) {
+        site.number = num;
+        site.name = name;
+        site.address = addr;
+        site.note = note;
+      }
+      delete siteNumber.dataset.editId;
+    } else {
+      const id = "site_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      state.sites.push({ id, number: num, name, address: addr, note });
+    }
+
+    siteNumber.value = "";
+    siteName.value = "";
+    siteAddress.value = "";
+    siteNote.value = "";
+    renderSites();
+    renderSiteSelect(); // ★ここでも呼ぶことで、日程編集側のリストが即座に更新される
+  });
+
+  document.getElementById("btnClearSiteForm").addEventListener("click", () => {
+    siteNumber.value = "";
+    siteName.value = "";
+    siteAddress.value = "";
+    siteNote.value = "";
+    delete siteNumber.dataset.editId;
+  });
+
+  document.getElementById("btnSearchAddress").addEventListener("click", () => {
+    const q = encodeURIComponent(siteName.value || siteAddress.value || "");
+    const url = "https://www.google.com/maps/search/?api=1&query=" + q;
+    window.open(url, "_blank");
+  });
+
+  // 日程
+  function renderDaySelect() {
+    daySelect.innerHTML = "";
+    if (state.days.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "日程なし";
+      daySelect.appendChild(opt);
+      return;
+    }
+    state.days.forEach(day => {
+      const opt = document.createElement("option");
+      opt.value = day.id;
+      opt.textContent = day.name || "(名称未設定)";
+      daySelect.appendChild(opt);
+    });
+  }
+
+  document.getElementById("btnAddDay").addEventListener("click", () => {
+    const name = dayName.value.trim() || `日程${state.days.length+1}`;
+    const id = "day_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    state.days.push({ id, name, segments: [] });
+    dayName.value = "";
+    renderDaySelect();
+    daySelect.value = id;
+    renderSegments();
+  });
+
+  daySelect.addEventListener("change", () => {
+    renderSegments();
+  });
+
+  document.getElementById("btnAddSegment").addEventListener("click", () => {
+    const dayId = daySelect.value;
+    if (!dayId) {
+      alert("日程を先に追加・選択して");
+      return;
+    }
+    const siteId = siteSelect.value;
+    if (!siteId) {
+      alert("札所を選択して");
+      return;
+    }
+    const day = state.days.find(d => d.id === dayId);
+    if (!day) return;
+
+    const segId = "seg_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    day.segments.push({
+      id: segId,
+    siteId,
+    mode: "walk",
+    memo: "",
+    departPlace: "",
+    departTime: "",
+    arrivePlace: "",
+    arriveTime: "",
+    fare: "" 
+    });
+    renderSegments();
+  });
+
+  function renderSegments() {
+    segmentsContainer.innerHTML = "";
+    const dayId = daySelect.value;
+    const day = state.days.find(d => d.id === dayId);
+    if (!day) return;
+
+    day.segments.forEach((seg, idx) => {
+      const site = state.sites.find(s => s.id === seg.siteId);
+      const mode = MODES.find(m => m.id === seg.mode) || MODES[2];
+
+      const div = document.createElement("div");
+      div.className = "seg-row";
+      div.dataset.id = seg.id;
+      div.innerHTML = `
+        <div class="seg-header">
+          <div>
+            <span class="handle">≡</span>
+            <span class="pill ${mode.pillClass}">
+              <span>${mode.icon}</span><span>${mode.label}</span>
+            </span>
+            <span class="badge">${site ? (site.number || "") : ""}</span>
+            <strong>${site ? site.name : "(削除済み札所)"}</strong>
+          </div>
+          <div>
+            <button class="btn btn-small btn-up">↑</button>
+            <button class="btn btn-small btn-down">↓</button>
+            <button class="btn btn-small btn-del-seg">削除</button>
+          </div>
+        </div>
+        <div class="seg-body">
+          <div>
+    <div>出発地</div>
+    <input type="text" class="seg-depart-place" value="${seg.departPlace || ""}">
+  </div>
+
+  <div>
+    <div>出発時刻</div>
+    <input type="time" class="seg-depart" value="${seg.departTime || ""}">
+  </div>
+
+  <div>
+    <div>到着地</div>
+    <input type="text" class="seg-arrive-place" value="${seg.arrivePlace || ""}">
+  </div>
+
+  <div>
+    <div>到着時刻</div>
+    <input type="time" class="seg-arrive" value="${seg.arriveTime || ""}">
+  </div>
+
+  <div>
+    <div>運賃</div>
+    <input type="text" class="seg-fare" value="${seg.fare || ""}" placeholder="例：210円">
+  </div>
+
+  <div>
+    <div>移動手段</div>
+    <select class="seg-mode">
+      ${MODES.map(m => `
+        <option value="${m.id}" ${m.id===seg.mode?"selected":""}>${m.label}</option>
+      `).join("")}
+    </select>
+  </div>
+
+  <div style="flex:1;">
+    <div>メモ</div>
+    <input type="text" class="seg-memo" value="${seg.memo || ""}" placeholder="例：京急で移動など">
+  </div>
+        </div>
+      `;
+      segmentsContainer.appendChild(div);
+
+      const departPlaceInput = div.querySelector(".seg-depart-place");
+        const departInput = div.querySelector(".seg-depart");
+const arrivePlaceInput = div.querySelector(".seg-arrive-place");
+const arriveInput = div.querySelector(".seg-arrive");
+const modeSelect = div.querySelector(".seg-mode");
+const fareInput = div.querySelector(".seg-fare");
+const memoInput = div.querySelector(".seg-memo");
+
+// 出発地
+departPlaceInput.addEventListener("input", () => {
+  seg.departPlace = departPlaceInput.value;
+});
+
+// 出発時刻
+departInput.addEventListener("change", () => {
+  seg.departTime = departInput.value;
+});
+
+// 到着地
+arrivePlaceInput.addEventListener("input", () => {
+  seg.arrivePlace = arrivePlaceInput.value;
+});
+
+// 到着時刻
+arriveInput.addEventListener("change", () => {
+  seg.arriveTime = arriveInput.value;
+});
+
+// 移動手段
+modeSelect.addEventListener("change", () => {
+  seg.mode = modeSelect.value;
+  renderSegments();   // pill の色やアイコン更新のため
+});
+
+// 運賃
+fareInput.addEventListener("input", () => {
+  seg.fare = fareInput.value;
+});
+
+// メモ
+memoInput.addEventListener("input", () => {
+  seg.memo = memoInput.value;
+});
+
+
+      div.querySelector(".btn-del-seg").addEventListener("click", () => {
+        day.segments = day.segments.filter(s => s.id !== seg.id);
+        renderSegments();
+      });
+      div.querySelector(".btn-up").addEventListener("click", () => {
+        if (idx === 0) return;
+        const tmp = day.segments[idx-1];
+        day.segments[idx-1] = day.segments[idx];
+        day.segments[idx] = tmp;
+        renderSegments();
+      });
+      div.querySelector(".btn-down").addEventListener("click", () => {
+        if (idx === day.segments.length-1) return;
+        const tmp = day.segments[idx+1];
+        day.segments[idx+1] = day.segments[idx];
+        day.segments[idx] = tmp;
+        renderSegments();
+      });
+    });
+  }
+
+  // プレビュー
+  function renderPreview() {
+    // 概要
+    const p = state.pilgrimage;
+    previewSummary.innerHTML = `
+      <div><strong>巡礼名：</strong>${p.name || ""}</div>
+      <div><strong>出発地：</strong>${p.startLocation || ""}</div>
+      <div><strong>メモ：</strong>${(p.note || "").replace(/\n/g,"<br>")}</div>
+      <div><strong>札所数：</strong>${state.sites.length}</div>
+      <div><strong>日程数：</strong>${state.days.length}</div>
+    `;
+
+    // 日程
+    previewSchedule.innerHTML = "";
+    state.days.forEach(day => {
+      const dayDiv = document.createElement("div");
+      dayDiv.style.marginBottom = "8px";
+      dayDiv.innerHTML = `<div><strong>${day.name}</strong></div>`;
+      const ul = document.createElement("ul");
+      ul.style.margin = "2px 0 0 16px";
+      ul.style.padding = "0";
+      day.segments.forEach(seg => {
+        const site = state.sites.find(s => s.id === seg.siteId);
+        const mode = MODES.find(m => m.id === seg.mode) || MODES[2];
+        const li = document.createElement("li");
+        li.style.listStyle = "disc";
+        li.innerHTML = `
+          [${seg.departTime || "--:--"} → ${seg.arriveTime || "--:--"}]
+          ${mode.icon} ${mode.label} →
+          ${site ? (site.number || "") + " " + site.name : "(削除済み札所)"}
+          ${seg.memo ? " / " + seg.memo : ""}
+        `;
+        ul.appendChild(li);
+      });
+      dayDiv.appendChild(ul);
+      previewSchedule.appendChild(dayDiv);
+    });
+
+    // JSON
+    jsonOutput.textContent = JSON.stringify(state, null, 2);
+  }
+
+  // localStorage
+  const STORAGE_KEY = "pilgrimage_planner_v01";
+
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    alert("保存した");
+  }
+
+  function loadFromStorage() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      alert("保存データなし");
+      return;
+    }
+    try {
+      const obj = JSON.parse(raw);
+      state.pilgrimage = obj.pilgrimage || state.pilgrimage;
+      state.sites = obj.sites || [];
+      state.days = obj.days || [];
+      bindPilgrimageInputs();
+      renderSites();
+      renderDaySelect();
+      renderSegments();
+      alert("再読込した");
+    } catch(e) {
+      alert("読込エラー");
+    }
+  }
+
+  document.getElementById("btnSave").addEventListener("click", saveToStorage);
+  document.getElementById("btnLoad").addEventListener("click", loadFromStorage);
+
+  // JSON export/import
+  
+document.getElementById("btnExport").addEventListener("click", () => {
+  // 巡礼名をファイル名に使う（空なら fallback）
+  const name = (state.pilgrimage.name || "pilgrimage")
+                .replace(/[\\/:*?"<>|]/g, "_"); // ファイル名に使えない文字を除去
+
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${name}.json`;   // ← ここがポイント
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+
+
+  const fileImport = document.getElementById("fileImport");
+  document.getElementById("btnImport").addEventListener("click", () => {
+    fileImport.click();
+  });
+  fileImport.addEventListener("change", () => {
+    const file = fileImport.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const obj = JSON.parse(e.target.result);
+        state.pilgrimage = obj.pilgrimage || state.pilgrimage;
+        state.sites = obj.sites || [];
+        state.days = obj.days || [];
+        bindPilgrimageInputs();
+        renderSites();
+        renderDaySelect();
+        renderSegments();
+        alert("JSON読込完了");
+      } catch(err) {
+        alert("JSON読込エラー");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // 初期化
+  bindPilgrimageInputs();
+  renderSites();
+  renderDaySelect();
+
+  // ===== generateViewerHTML =====
+  function generateViewerHTML(data) {
+    const MODE_MAP = {
+      train: { label: '電車', icon: '🚃', cls: 'm-train' },
+      bus:   { label: 'バス', icon: '🚌', cls: 'm-bus'   },
+      walk:  { label: '徒歩', icon: '🚶', cls: 'm-walk'  },
+      other: { label: 'その他', icon: '🚢', cls: 'm-other' },
+    };
+    function gmUrl(from, to, mode) {
+      const tm = mode === 'walk' ? 'walking' : 'transit';
+      return 'https://www.google.com/maps/dir/?api=1'
+        + '&origin='      + encodeURIComponent(from || '')
+        + '&destination=' + encodeURIComponent(to   || '')
+        + '&travelmode='  + tm;
+    }
+    function esc(str) {
+      return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    const siteMap = {};
+    (data.sites || []).forEach(s => { siteMap[s.id] = s; });
+
+    function buildRows(day) {
+      const rows = [];
+      const siteOrder = [], siteSegs = {};
+      (day.segments || []).forEach(seg => {
+        const sid = seg.siteId;
+        if (!siteSegs[sid]) { siteSegs[sid] = []; siteOrder.push(sid); }
+        siteSegs[sid].push(seg);
+      });
+      siteOrder.forEach(sid => {
+        const site = siteMap[sid];
+        if (site) rows.push({ type: 'temple', site });
+        siteSegs[sid].forEach(seg => rows.push({ type: 'seg', seg }));
+      });
+      return rows;
+    }
+
+    function totalFare(day) {
+      return (day.segments || []).reduce((sum, seg) => sum + (parseInt(seg.fare) || 0), 0);
+    }
+
+    const p = data.pilgrimage || {};
+    const days = data.days || [];
+    const title = p.name || '霊場巡礼';
+    const origin = p.startLocation || '';
+    const globalNote = p.note || '';
+
+    let tabsHTML = '', panelsHTML = '';
+    days.forEach((day, di) => {
+      const rows = buildRows(day);
+      const fare = totalFare(day);
+      tabsHTML += `<div class="tab${di===0?' active':''}" data-di="${di}">${esc(day.name || (di+1)+'日目')}</div>\n`;
+
+      let inner = `<div class="access-bar"><strong>${esc(day.name||'')}</strong><br>📍 ${esc(origin)}${globalNote?'<br>'+esc(globalNote):''}</div>`;
+      inner += `<div class="tbl-wrap"><table>
+<colgroup><col style="width:72px"><col><col style="width:52px"><col><col style="width:52px"><col style="width:72px"></colgroup>
+<thead><tr class="hdr-main"><th>手段</th><th>出発地点</th><th>出発時刻</th><th>到着地点</th><th>到着時刻</th><th>地図</th></tr></thead><tbody>`;
+
+      rows.forEach(row => {
+        if (row.type === 'temple') {
+          const s = row.site;
+          const isWarn = (s.note||'').includes('⚠');
+          inner += `<tr class="temple-row">
+  <td colspan="4"><span class="num-cell${isWarn?' warn':''}">${esc(s.number||'')}</span>　<strong>${esc(s.name||'')}</strong>　<span style="font-size:.72rem;color:#666">${esc(s.address||'')}</span>　<span class="note-cell${isWarn?' warn-txt':''}">${esc(s.note||'')}</span></td>
+  <td></td><td></td></tr>`;
+        } else {
+          const seg = row.seg;
+          const m = MODE_MAP[seg.mode] || MODE_MAP['other'];
+          const isWalk = seg.mode === 'walk';
+          const url = gmUrl(seg.departPlace, seg.arrivePlace, seg.mode);
+          const memo = seg.memo ? `<span style="font-size:.68rem;color:#888;margin-left:4px">${esc(seg.memo)}</span>` : '';
+          const fareStr = (parseInt(seg.fare)>0) ? `<span style="font-size:.68rem;color:#8B3A2A;margin-left:6px">¥${parseInt(seg.fare).toLocaleString()}</span>` : '';
+          inner += `<tr class="seg-row">
+  <td><span class="mode-badge ${m.cls}">${m.icon} ${m.label}</span></td>
+  <td class="place-cell">${esc(seg.departPlace||'')}${memo}</td>
+  <td class="time-cell">${esc(seg.departTime||'')}</td>
+  <td class="place-cell">${esc(seg.arrivePlace||'')}${fareStr}</td>
+  <td class="time-cell">${esc(seg.arriveTime||'')}</td>
+  <td><a class="map-btn${isWalk?' walk':''}" href="${url}" target="_blank">📍 地図</a></td></tr>`;
+        }
+      });
+
+      inner += `<tr class="total-row"><td colspan="6">本日の交通費合計（概算）　¥${fare.toLocaleString()}</td></tr></tbody></table></div>`;
+      panelsHTML += `<div class="panel${di===0?' active':''}" data-di="${di}">${inner}</div>\n`;
+    });
+
+    const css = `:root{--rust:#8B3A2A;--gold:#C4933F;--sage:#3A6B3A;--warn:#B85C00;--ink:#1a1a1a;--border:#ccc;--row-even:#f7f3ec;--hdr-bg:#3d3228;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:13px;background:#e8e2d8;color:var(--ink);padding-bottom:32px;}
+.app-bar{position:sticky;top:0;z-index:200;background:var(--rust);color:white;padding:48px 16px 10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+.app-bar h1{font-size:1rem;font-weight:700;letter-spacing:.1em;}
+.app-bar p{font-size:.72rem;opacity:.85;margin-top:2px;}
+.tabs{position:sticky;top:82px;z-index:190;display:flex;overflow-x:auto;scrollbar-width:none;background:#5c2318;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:none;padding:9px 14px;font-size:.75rem;font-weight:700;color:rgba(255,255,255,.55);white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer;transition:all .15s;}
+.tab.active{color:#fff;border-bottom-color:var(--gold);}
+.panel{display:none;}.panel.active{display:block;}
+.access-bar{background:#fff8ee;border-left:4px solid var(--gold);padding:8px 12px;font-size:.75rem;color:#5a4020;margin:10px 10px 6px;border-radius:0 6px 6px 0;line-height:1.6;}
+.tbl-wrap{overflow-x:auto;margin:0 10px 16px;border-radius:8px;border:1px solid var(--border);box-shadow:0 1px 6px rgba(0,0,0,.1);-webkit-overflow-scrolling:touch;}
+table{border-collapse:collapse;width:100%;min-width:620px;background:white;}
+thead tr.hdr-main th{background:var(--hdr-bg);color:white;font-size:.72rem;font-weight:700;padding:7px 8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.15);text-align:center;}
+tr.temple-row{background:#e8f0e8;border-top:2px solid #4a8a4a;}
+tr.temple-row td{padding:7px 8px;font-weight:700;font-size:.82rem;vertical-align:middle;}
+.num-cell{background:var(--sage);color:white;text-align:center;white-space:nowrap;min-width:44px;border-radius:4px;padding:4px 6px;font-size:.75rem;display:inline-block;}
+.num-cell.warn{background:var(--warn);}
+.note-cell{font-size:.72rem;font-weight:400;color:#444;}
+.warn-txt{color:var(--warn);font-weight:700;}
+tr.seg-row{background:#fff;border-top:1px solid #e0d8cc;}
+tr.seg-row:nth-child(even){background:var(--row-even);}
+tr.seg-row td{padding:5px 8px;font-size:.75rem;vertical-align:middle;border-right:1px solid #e0d8cc;white-space:nowrap;}
+tr.seg-row td:last-child{border-right:none;}
+.mode-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;white-space:nowrap;}
+.m-train{background:#DBEAFE;color:#1E40AF;}.m-bus{background:#FEF3C7;color:#92400E;}.m-walk{background:#F3E8FF;color:#6B21A8;}.m-other{background:#E5E7EB;color:#374151;}
+.time-cell{color:#444;font-size:.72rem;text-align:center;}
+.place-cell{color:var(--ink);font-size:.78rem;}
+.map-btn{display:inline-flex;align-items:center;justify-content:center;background:var(--rust);color:white;text-decoration:none;border-radius:6px;padding:5px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;min-height:32px;}
+.map-btn.walk{background:#7B1FA2;}
+tr.total-row td{background:#f0e8d8;font-weight:700;font-size:.8rem;padding:7px 10px;border-top:2px solid #c8b090;text-align:right;color:var(--rust);}`;
+
+    return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>${esc(title)}</title>
+<style>${css}</style>
+</head>
+<body>
+<div class="app-bar"><h1>${esc(title)}　巡礼行程</h1><p>${esc(origin)} ／ Google Maps ナビ付き</p></div>
+<div class="tabs" id="tabs">${tabsHTML}</div>
+<div id="panels">${panelsHTML}</div>
+<script>
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const di=tab.dataset.di;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.di===di));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.di===di));
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+<\/script>
+</body></html>`;
+  }
+  // ===== /generateViewerHTML =====
+
+  document.getElementById("btnGenerateViewer").addEventListener("click", () => {
+  const html = generateViewerHTML(state);  // ← Claude が作った関数
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (state.pilgrimage.name || "viewer") + ".html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+});
+
+</script>
+</body>
+</html>
