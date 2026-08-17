@@ -1,0 +1,3676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>東京 ⇄ 新大阪 | 新幹線・在来線 乗り継ぎシミュレーター</title>
+
+<style>
+  :root{
+    --navy:#0b2545;
+    --navy-2:#132f5c;
+    --ivory:#f6f3ea;
+    --card:#ffffff;
+    --amber:#ffb627;
+    --amber-deep:#e79a00;
+    --slate:#5b6b8c;
+    --line:#dcd6c4;
+    --coral:#e4572e;
+    --green:#2f8f5b;
+    --green-light:#e8f6ee;
+    --mono:"Roboto Mono","SFMono-Regular",Consolas,monospace;
+    --sans:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  }
+
+  *{
+    box-sizing:border-box;
+  }
+
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--ivory);
+    color:var(--navy);
+    padding-bottom:130px;
+  }
+
+  header{
+    background:var(--navy);
+    color:var(--ivory);
+    padding:22px 20px 26px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  header::after{
+    content:"";
+    position:absolute;
+    right:-40px;
+    top:-40px;
+    width:180px;
+    height:180px;
+    border-radius:50%;
+    background:radial-gradient(
+      circle,
+      rgba(255,182,39,.18),
+      transparent 70%
+    );
+  }
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--amber);
+    margin:0 0 6px;
+    text-transform:uppercase;
+  }
+
+  h1{
+    margin:0;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+
+  .sub{
+    margin:8px 0 0;
+    font-size:12.5px;
+    color:#c9d3e6;
+    line-height:1.6;
+  }
+
+  /* ---------------------------------------------------------------
+     始点・終点
+  --------------------------------------------------------------- */
+
+  .controls{
+    max-width:720px;
+    margin:0 auto;
+    padding:18px 16px 0;
+  }
+
+  .picker{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    box-shadow:0 2px 10px rgba(11,37,69,.05);
+  }
+
+  .picker select{
+    flex:1;
+    font-family:var(--sans);
+    font-size:15px;
+    font-weight:600;
+    color:var(--navy);
+    padding:10px;
+    border-radius:9px;
+    border:1.5px solid var(--line);
+    background:#fbfaf6;
+  }
+
+  .swap-btn{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    background:#fbfaf6;
+    color:var(--navy-2);
+    font-size:16px;
+    cursor:pointer;
+    flex:0 0 auto;
+    transition:transform .18s ease;
+  }
+
+  .swap-btn:hover{
+    transform:rotate(180deg);
+    border-color:var(--amber-deep);
+  }
+
+  /* ---------------------------------------------------------------
+     路線ストリップ
+  --------------------------------------------------------------- */
+
+  .route-strip{
+    max-width:720px;
+    margin:14px auto 0;
+    padding:0 16px;
+  }
+
+  .strip-track{
+    position:relative;
+    height:44px;
+    display:flex;
+    align-items:center;
+  }
+
+  .strip-line{
+    position:absolute;
+    left:0;
+    right:0;
+    top:50%;
+    height:3px;
+    background:var(--line);
+    transform:translateY(-50%);
+    border-radius:2px;
+  }
+
+  .strip-dots{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    width:100%;
+  }
+
+  .strip-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--line);
+    border:2px solid var(--ivory);
+  }
+
+  .strip-dot.on{
+    background:var(--navy);
+  }
+
+  .strip-dot.edge{
+    background:var(--amber-deep);
+    width:12px;
+    height:12px;
+  }
+
+  /* ---------------------------------------------------------------
+     注意書き
+  --------------------------------------------------------------- */
+
+  .note-bar{
+    max-width:720px;
+    margin:12px auto 0;
+    padding:10px 14px;
+    background:#fff8e8;
+    border:1px solid #f0d999;
+    border-radius:10px;
+    font-size:11.5px;
+    color:#7a5c14;
+    line-height:1.6;
+  }
+
+  /* ---------------------------------------------------------------
+     タブ切り替え
+  --------------------------------------------------------------- */
+
+  .tab-bar{
+    max-width:720px;
+    margin:16px auto 0;
+    padding:0 16px;
+    display:flex;
+    gap:8px;
+  }
+  .tab-btn{
+    flex:1;
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:700;
+    padding:11px 10px;
+    border-radius:12px;
+    border:1.5px solid var(--line);
+    background:var(--card);
+    color:var(--slate);
+    cursor:pointer;
+  }
+  .tab-btn.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+  }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---------------------------------------------------------------
+     青春18きっぷ タブ
+  --------------------------------------------------------------- */
+
+  .s18-budget-bar{
+    max-width:720px;
+    margin:14px auto 0;
+    padding:0 16px;
+  }
+  .s18-budget-bar label{
+    display:block;
+    font-size:11.5px;
+    color:var(--slate);
+    margin-bottom:6px;
+  }
+  .s18-budget-input{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+  }
+  .s18-budget-input input{
+    width:110px;
+    font-family:var(--mono);
+    font-size:16px;
+    font-weight:700;
+    color:var(--navy);
+    padding:8px 10px;
+    border-radius:9px;
+    border:1.5px solid var(--line);
+    background:#fbfaf6;
+  }
+  .s18-budget-input span{
+    font-size:12.5px;
+    color:var(--slate);
+  }
+  .s18-budget-input .ghost-btn{
+    margin-left:auto;
+  }
+
+  .s18-baseline{
+    max-width:720px;
+    margin:12px auto 0;
+    padding:0 16px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--slate);
+  }
+
+  .s18-results{
+    max-width:720px;
+    margin:12px auto 40px;
+    padding:0 16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    color:var(--slate);
+    font-size:13px;
+  }
+
+  .s18-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    box-shadow:0 2px 10px rgba(11,37,69,.05);
+  }
+  .s18-card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .s18-rank{
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:700;
+    color:#fff;
+    background:var(--navy-2);
+    border-radius:10px;
+    padding:2px 8px;
+    margin-right:6px;
+  }
+  .s18-cost{
+    font-family:var(--mono);
+    font-size:20px;
+    font-weight:700;
+    color:var(--navy);
+  }
+  .s18-metrics{
+    display:flex;
+    gap:20px;
+    margin-top:8px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+  .s18-metrics .m-label{
+    font-size:9.5px;
+    color:var(--slate);
+    letter-spacing:.04em;
+  }
+  .s18-metrics .m-value{
+    font-size:15px;
+    font-weight:700;
+    color:var(--navy);
+  }
+  .s18-metrics .m-value.save{ color:var(--green,#2f8f5b); }
+
+  .s18-route{
+    margin-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .s18-route-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    padding:3px 0;
+  }
+  .s18-route-mode{
+    font-family:var(--mono);
+    font-size:9.5px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:9px;
+    background:var(--amber);
+    color:var(--navy);
+    flex:0 0 auto;
+  }
+  .s18-route-row.local .s18-route-mode{
+    background:#e2e6ee;
+    color:var(--slate);
+  }
+  .s18-route-span{ flex:1; color:var(--navy); font-weight:600; }
+  .s18-route-fee{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--slate);
+  }
+
+  .s18-empty{
+    text-align:center;
+    color:var(--slate);
+    padding:20px;
+  }
+
+
+  .current-result{
+    max-width:720px;
+    margin:16px auto 0;
+    padding:0 16px;
+  }
+
+  .result-card{
+    background:var(--navy);
+    color:#fff;
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 4px 16px rgba(11,37,69,.18);
+  }
+
+  .result-title{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.08em;
+    color:#c9d3e6;
+    margin-bottom:14px;
+  }
+
+  .result-main{
+    display:grid;
+    grid-template-columns:1.2fr 1fr 1fr 1fr;
+    gap:10px;
+  }
+
+  .result-item{
+    background:rgba(255,255,255,.07);
+    border-radius:10px;
+    padding:11px 12px;
+    min-width:0;
+  }
+
+  .result-item.total{
+    background:rgba(255,182,39,.14);
+    border:1px solid rgba(255,182,39,.35);
+  }
+
+  .result-label{
+    font-family:var(--mono);
+    font-size:9.5px;
+    color:#9eafd0;
+    margin-bottom:5px;
+    letter-spacing:.04em;
+  }
+
+  .result-item.total .result-label{
+    color:#ffd477;
+  }
+
+  .result-value{
+    font-family:var(--mono);
+    font-size:21px;
+    font-weight:700;
+    line-height:1.2;
+    white-space:nowrap;
+  }
+
+  .result-item.total .result-value{
+    color:var(--amber);
+    font-size:25px;
+  }
+
+  .result-sub{
+    margin-top:5px;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:#a9d9b8;
+    white-space:nowrap;
+  }
+
+  .result-sub.neutral{
+    color:#9eafd0;
+  }
+
+  .result-note{
+    margin-top:10px;
+    font-size:10.5px;
+    color:#aebbd2;
+    line-height:1.5;
+  }
+
+  /* ---------------------------------------------------------------
+     操作ボタン
+  --------------------------------------------------------------- */
+
+  .actions{
+    max-width:720px;
+    margin:14px auto 0;
+    padding:0 16px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .ghost-btn{
+    font-family:var(--sans);
+    font-size:12px;
+    font-weight:700;
+    padding:9px 14px;
+    border-radius:20px;
+    border:1.5px solid var(--navy-2);
+    background:transparent;
+    color:var(--navy-2);
+    cursor:pointer;
+  }
+
+  .ghost-btn.fill{
+    background:var(--navy-2);
+    color:#fff;
+  }
+
+  .ghost-btn:hover{
+    opacity:.85;
+  }
+
+  /* ---------------------------------------------------------------
+     区間カード
+  --------------------------------------------------------------- */
+
+  .segments{
+    max-width:720px;
+    margin:16px auto 0;
+    padding:0 16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .compose-panel{
+    background:var(--navy-2);
+    border-radius:14px;
+    padding:12px 14px;
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .compose-title{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.03em;
+    color:#a9b8d6;
+    margin-bottom:2px;
+  }
+  .compose-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:12.5px;
+    padding:5px 0;
+    border-top:1px solid rgba(255,255,255,.1);
+    flex-wrap:wrap;
+  }
+  .compose-row:first-of-type{ border-top:none; }
+  .compose-mode{
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:10px;
+    background:var(--amber);
+    color:var(--navy);
+    flex:0 0 auto;
+  }
+  .compose-row.local .compose-mode{
+    background:var(--coral);
+    color:#fff;
+  }
+  .compose-span{ flex:1; font-weight:600; min-width:120px; }
+  .compose-fee{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:#dfe6f2;
+  }
+
+  .seg-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    box-shadow:0 2px 10px rgba(11,37,69,.05);
+  }
+
+  .seg-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .seg-name{
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--navy);
+  }
+
+  .seg-name .arrow{
+    color:var(--slate);
+    font-weight:400;
+    margin:0 4px;
+  }
+
+  .seg-block-label{
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--slate);
+    margin-top:2px;
+  }
+
+  /* ---------------------------------------------------------------
+     トグル
+  --------------------------------------------------------------- */
+
+  .toggle{
+    position:relative;
+    width:84px;
+    height:30px;
+    border-radius:16px;
+    background:var(--navy);
+    cursor:pointer;
+    border:none;
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    padding:0 8px;
+    font-family:var(--mono);
+    font-size:9.5px;
+    font-weight:700;
+    color:#fff;
+    justify-content:space-between;
+    transition:background .2s ease;
+  }
+
+  .toggle.is-local{
+    background:var(--coral);
+  }
+
+  .toggle .knob{
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:#fff;
+    transition:left .2s ease;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+
+  .toggle.is-local .knob{
+    left:calc(100% - 27px);
+  }
+
+  .toggle span{
+    position:relative;
+    z-index:1;
+    pointer-events:none;
+  }
+
+  .toggle.disabled{
+    background:#c7cddb;
+    cursor:not-allowed;
+  }
+
+  .toggle.disabled .knob{
+    background:#eef0f5;
+  }
+
+  /* ---------------------------------------------------------------
+     区間下部
+  --------------------------------------------------------------- */
+
+  .seg-bottom{
+    margin-top:10px;
+    display:flex;
+    gap:18px;
+    font-family:var(--mono);
+    font-size:12px;
+    flex-wrap:wrap;
+  }
+
+  .metric .label{
+    font-size:9.5px;
+    color:var(--slate);
+    letter-spacing:.04em;
+  }
+
+  .metric .value{
+    font-size:15px;
+    font-weight:700;
+    color:var(--navy);
+  }
+
+  .metric.local .value{
+    color:var(--coral);
+  }
+
+  .disabled-note{
+    margin-top:8px;
+    font-size:11px;
+    color:var(--slate);
+    background:#f1f0e9;
+    border-radius:8px;
+    padding:6px 9px;
+  }
+
+  /* ---------------------------------------------------------------
+     乗換チップ
+  --------------------------------------------------------------- */
+
+  .transfer-chip{
+    max-width:720px;
+    margin:2px auto;
+    padding:0 16px;
+    text-align:center;
+  }
+
+  .transfer-chip span{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--amber-deep);
+    background:#fff3da;
+    border:1px dashed var(--amber-deep);
+    padding:3px 10px;
+    border-radius:12px;
+  }
+
+  /* ---------------------------------------------------------------
+     参考ルート
+  --------------------------------------------------------------- */
+
+  .reference-section{
+    max-width:720px;
+    margin:28px auto 30px;
+    padding:0 16px;
+  }
+
+  .reference-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 2px 10px rgba(11,37,69,.05);
+  }
+
+  .reference-title{
+    font-size:15px;
+    font-weight:700;
+    color:var(--navy);
+    margin-bottom:6px;
+  }
+
+  .reference-description{
+    font-size:11px;
+    color:var(--slate);
+    line-height:1.6;
+    margin-bottom:14px;
+  }
+
+  .reference-control{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+
+  .reference-control label{
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .reference-control input{
+    width:90px;
+    padding:8px 10px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    font-family:var(--mono);
+    font-size:14px;
+    text-align:right;
+    background:#fbfaf6;
+  }
+
+  .reference-control span{
+    font-size:12px;
+  }
+
+  .reference-btn{
+    font-family:var(--sans);
+    font-size:12px;
+    font-weight:700;
+    padding:9px 14px;
+    border-radius:20px;
+    border:none;
+    background:var(--green);
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .reference-result{
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+
+  .reference-result.empty{
+    color:var(--slate);
+    font-size:11.5px;
+  }
+
+  .reference-summary{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-bottom:14px;
+  }
+
+  .reference-metric{
+    background:#f5f7f4;
+    border-radius:9px;
+    padding:9px 10px;
+  }
+
+  .reference-metric .label{
+    font-family:var(--mono);
+    font-size:8.5px;
+    color:var(--slate);
+  }
+
+  .reference-metric .value{
+    font-family:var(--mono);
+    font-size:16px;
+    font-weight:700;
+    color:var(--navy);
+    margin-top:3px;
+  }
+
+  .reference-route{
+    background:#f8f8f5;
+    border-radius:10px;
+    padding:12px;
+    font-size:11.5px;
+    line-height:1.8;
+  }
+
+  .reference-route strong{
+    color:var(--navy);
+  }
+
+  .route-local{
+    color:var(--coral);
+    font-weight:700;
+  }
+
+  .route-shink{
+    color:var(--navy);
+    font-weight:700;
+  }
+
+  /* ---------------------------------------------------------------
+     フッターサマリー
+  --------------------------------------------------------------- */
+
+  footer.summary{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    background:var(--navy);
+    color:#fff;
+    padding:14px 18px 18px;
+    box-shadow:0 -6px 20px rgba(0,0,0,.25);
+    z-index:20;
+  }
+
+  .summary-inner{
+    max-width:720px;
+    margin:0 auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sum-block .label{
+    font-family:var(--mono);
+    font-size:10px;
+    color:#8fa1c7;
+    letter-spacing:.08em;
+  }
+
+  .sum-block .big{
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:700;
+    color:var(--amber);
+    line-height:1.2;
+  }
+
+  .sum-block .big small{
+    font-size:13px;
+    margin-left:2px;
+    color:#dfe6f2;
+  }
+
+  .sum-diff{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#a9d9b8;
+  }
+
+  .sum-diff.zero{
+    color:#8fa1c7;
+  }
+
+  @media (max-width:600px){
+
+    .result-main{
+      grid-template-columns:1fr 1fr;
+    }
+
+    .result-item.total{
+      grid-column:1 / -1;
+    }
+
+    .reference-summary{
+      grid-template-columns:1fr 1fr;
+    }
+  }
+
+  @media (max-width:420px){
+
+    .seg-bottom{
+      gap:12px;
+    }
+
+    .sum-block .big{
+      font-size:22px;
+    }
+
+    .result-value{
+      font-size:18px;
+    }
+
+    .result-item.total .result-value{
+      font-size:22px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <p class="eyebrow">Tokyo – Shin-Osaka / Route Optimizer</p>
+
+  <h1>新幹線・在来線 乗り継ぎシミュレーター</h1>
+
+  <p class="sub">
+    区間ごとに在来線へ切り替えると、所要時間は増えますが特急料金を抑えられます。<br>
+    どこを在来線にすると一番お得か、トグルで試してください。
+  </p>
+</header>
+
+
+<!-- ===============================================================
+     タブ切り替え
+=============================================================== -->
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabBtnShinkansen" data-tab="shinkansen">新幹線⇄在来線</button>
+  <button class="tab-btn" id="tabBtnSeishun18" data-tab="seishun18">青春18きっぷ</button>
+</div>
+
+
+<!-- ===============================================================
+     タブ1：新幹線⇄在来線 乗り継ぎシミュレーター
+=============================================================== -->
+
+<div class="tab-panel active" id="tabPanelShinkansen">
+
+
+<!-- ===============================================================
+     始点・終点
+=============================================================== -->
+
+<div class="controls">
+  <div class="picker">
+
+    <select id="startSelect"></select>
+
+    <button
+      class="swap-btn"
+      id="swapBtn"
+      title="始点/終点を入れ替え"
+    >⇄</button>
+
+    <select id="endSelect"></select>
+
+  </div>
+</div>
+
+
+<!-- ===============================================================
+     路線ストリップ
+=============================================================== -->
+
+<div class="route-strip">
+  <div class="strip-track">
+
+    <div class="strip-line"></div>
+
+    <div
+      class="strip-dots"
+      id="stripDots"
+    ></div>
+
+  </div>
+</div>
+
+
+<!-- ===============================================================
+     注意書き
+=============================================================== -->
+
+<div class="note-bar">
+
+  ＊ 品川・新横浜は新幹線のみ通過する駅のため、
+  東京〜小田原間は「ひとまとまりの区間」として在来線に切り替えます
+  （品川・新横浜単独では在来線を選べません）。
+
+  <br>
+
+  ＊ 所要時間はこだま基準の参考値です。
+  運賃・特急料金は正規料金表に基づく実額です。
+  乗換は1回あたり30分で計算しています。
+
+  <br>
+
+  ＊ <strong>運賃は始点〜終点で決まる固定額</strong>です。
+  在来線に切り替えても運賃は変わりません。
+
+  <br>
+
+  ＊ <strong>特急料金は、連続する新幹線区間ごとに計算して合算</strong>します。
+  在来線区間には特急料金はかかりません。
+
+</div>
+
+
+<!-- ===============================================================
+     現在のシミュレーション結果
+=============================================================== -->
+
+<div class="current-result">
+
+  <div class="result-card">
+
+    <div class="result-title">
+      現在のシミュレーション結果
+    </div>
+
+    <div class="result-main">
+
+      <!-- 合計コスト -->
+      <div class="result-item total">
+
+        <div class="result-label">
+          TOTAL COST
+        </div>
+
+        <div
+          class="result-value"
+          id="resultTotalCost"
+        >
+          --円
+        </div>
+
+        <div
+          class="result-sub"
+          id="resultTotalDiff"
+        >
+          &nbsp;
+        </div>
+
+      </div>
+
+
+      <!-- 運賃 -->
+      <div class="result-item">
+
+        <div class="result-label">
+          運賃（固定）
+        </div>
+
+        <div
+          class="result-value"
+          id="resultFare"
+        >
+          --円
+        </div>
+
+        <div class="result-sub neutral">
+          始点・終点で決定
+        </div>
+
+      </div>
+
+
+      <!-- 特急料金 -->
+      <div class="result-item">
+
+        <div class="result-label">
+          特急料金
+        </div>
+
+        <div
+          class="result-value"
+          id="resultExp"
+        >
+          --円
+        </div>
+
+        <div
+          class="result-sub"
+          id="resultExpDiff"
+        >
+          &nbsp;
+        </div>
+
+      </div>
+
+
+      <!-- 所要時間 -->
+      <div class="result-item">
+
+        <div class="result-label">
+          所要時間
+        </div>
+
+        <div
+          class="result-value"
+          id="resultTime"
+        >
+          --分
+        </div>
+
+        <div
+          class="result-sub"
+          id="resultTimeDiff"
+        >
+          &nbsp;
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="result-note">
+
+      ※ 運賃は始点〜終点で固定。
+      特急料金のみ、連続する新幹線区間ごとに計算して合算しています。
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===============================================================
+     操作ボタン
+=============================================================== -->
+
+<div class="actions">
+
+  <button
+    class="ghost-btn fill"
+    id="resetBtn"
+  >
+    全区間 新幹線に戻す
+  </button>
+
+  <button
+    class="ghost-btn"
+    id="allLocalBtn"
+  >
+    切替可能な区間を全て在来線に
+  </button>
+
+</div>
+
+
+<!-- ===============================================================
+     区間一覧
+=============================================================== -->
+
+<div
+  class="segments"
+  id="segmentsWrap"
+></div>
+
+
+<!-- ===============================================================
+     参考ルート
+=============================================================== -->
+
+<div class="reference-section">
+
+  <div class="reference-card">
+
+    <div class="reference-title">
+      参考：許容時間内で特急料金を最大限節約するルート
+    </div>
+
+    <div class="reference-description">
+
+      「全区間新幹線」からの所要時間増加を上限として指定すると、
+      その範囲内で<strong>特急料金を最も節約できる組み合わせ</strong>を
+      自動的に探索します。
+
+      <br>
+
+      ※これはあくまで参考ルートです。
+      上のトグルを使った手動シミュレーションは独立して自由に試せます。
+
+    </div>
+
+
+    <div class="reference-control">
+
+      <label for="maxIncrease">
+        許容する時間増加
+      </label>
+
+      <input
+        id="maxIncrease"
+        type="number"
+        min="0"
+        max="600"
+        step="1"
+        value="120"
+      >
+
+      <span>分まで</span>
+
+      <button
+        class="reference-btn"
+        id="referenceBtn"
+      >
+        参考ルートを計算
+      </button>
+
+    </div>
+
+
+    <div
+      class="reference-result empty"
+      id="referenceResult"
+    >
+      「参考ルートを計算」を押すと、
+      現在選択している始点・終点について最適候補を表示します。
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ===============================================================
+     固定フッター
+=============================================================== -->
+
+<footer class="summary">
+
+  <div class="summary-inner">
+
+    <div class="sum-block">
+
+      <div class="label">
+        TOTAL TIME
+      </div>
+
+      <div
+        class="big"
+        id="totalTime"
+      >
+        --<small>分</small>
+      </div>
+
+      <div
+        class="sum-diff"
+        id="timeDiff"
+      >
+        &nbsp;
+      </div>
+
+    </div>
+
+
+    <div
+      class="sum-block"
+      style="text-align:right;"
+    >
+
+      <div class="label">
+        TOTAL COST
+      </div>
+
+      <div
+        class="big"
+        id="totalFare"
+      >
+        --<small>円</small>
+      </div>
+
+      <div
+        class="sum-diff"
+        id="fareDiff"
+      >
+        &nbsp;
+      </div>
+
+    </div>
+
+  </div>
+
+</footer>
+
+</div>
+<!-- /tabPanelShinkansen -->
+
+
+<!-- ===============================================================
+     タブ2：青春18きっぷ シミュレーター
+=============================================================== -->
+
+<div class="tab-panel" id="tabPanelSeishun18">
+
+  <div class="controls">
+    <div class="picker">
+      <select id="s18StartSelect"></select>
+      <button class="swap-btn" id="s18SwapBtn" title="始点/終点を入れ替え">⇄</button>
+      <select id="s18EndSelect"></select>
+    </div>
+  </div>
+
+  <div class="note-bar">
+    ＊ 青春18きっぷは普通・快速列車が乗り放題ですが、新幹線には別途<strong>運賃＋特急料金</strong>が必要です。
+    ここでは「どこを新幹線に置き換えると、いくらの追加出費でどれだけ時間短縮できるか」を、指定した予算内で探索します。<br>
+    ＊ 新幹線区間の料金は、連続する新幹線区間ごとに通しで計算します（品川・新横浜も始点・終点に選べます）。<br>
+    ＊ 短縮時間は乗換ロスを考慮せず、普通列車所要時間と新幹線（ひかり/こだま基準）所要時間の単純な差で計算した目安です。
+  </div>
+
+  <div class="s18-budget-bar">
+    <label for="s18Budget">追加予算（新幹線区間の運賃+特急料金の合計）</label>
+    <div class="s18-budget-input">
+      <input id="s18Budget" type="number" min="0" step="100" value="5000">
+      <span>円まで</span>
+      <button class="ghost-btn fill" id="s18SearchBtn">ルートを探す</button>
+    </div>
+  </div>
+
+  <div class="s18-baseline" id="s18Baseline"></div>
+
+  <div class="s18-results" id="s18Results">
+    予算を入力して「ルートを探す」を押してください。
+  </div>
+
+</div>
+<!-- /tabPanelSeishun18 -->
+
+
+<script>
+
+/* ===============================================================
+   駅データ
+   東京からの営業キロ
+
+   品川・新横浜は表示上の独立選択肢としては使用せず、
+   東京〜小田原ブロックにまとめる。
+=============================================================== */
+
+const STATIONS = [
+
+  {name:"東京",   km:0},
+  {name:"品川",   km:6.8},
+  {name:"新横浜", km:28.8},
+  {name:"小田原", km:83.9},
+  {name:"熱海",   km:104.6},
+  {name:"三島",   km:120.7},
+  {name:"静岡",   km:180.2},
+  {name:"掛川",   km:229.3},
+  {name:"浜松",   km:257.1},
+  {name:"豊橋",   km:293.6},
+  {name:"名古屋", km:366.0},
+  {name:"米原",   km:445.9},
+  {name:"京都",   km:513.6},
+  {name:"新大阪", km:552.6}
+
+];
+
+
+/* ===============================================================
+   表示用の始点・終点として選べる駅
+
+   品川・新横浜は除外。
+   =============================================================== */
+
+const SELECTABLE_STATIONS = [
+
+  {index:0,  name:"東京"},
+  {index:3,  name:"小田原"},
+  {index:4,  name:"熱海"},
+  {index:5,  name:"三島"},
+  {index:6,  name:"静岡"},
+  {index:7,  name:"掛川"},
+  {index:8,  name:"浜松"},
+  {index:9,  name:"豊橋"},
+  {index:10, name:"名古屋"},
+  {index:11, name:"米原"},
+  {index:12, name:"京都"},
+  {index:13, name:"新大阪"}
+
+];
+
+
+/* ===============================================================
+   運賃・特急料金表
+
+   fare = 始点〜終点の運賃
+   exp  = その区間を新幹線で利用した場合の特急料金
+
+   重要：
+   「連続する新幹線区間」の特急料金を計算する際に、
+   この表を使う。
+=============================================================== */
+
+const FARE_MATRIX = {
+
+  "0-1":{fare:170,exp:860},
+  "0-2":{fare:500,exp:860},
+  "0-3":{fare:1490,exp:2250},
+  "0-4":{fare:1940,exp:2250},
+  "0-5":{fare:2270,exp:2250},
+  "0-6":{fare:3350,exp:3000},
+  "0-7":{fare:4000,exp:3860},
+  "0-8":{fare:4430,exp:3860},
+  "0-9":{fare:5080,exp:3860},
+  "0-10":{fare:6260,exp:4620},
+  "0-11":{fare:7340,exp:5060},
+  "0-12":{fare:8210,exp:5390},
+  "0-13":{fare:8750,exp:5390},
+
+  "1-2":{fare:410,exp:860},
+  "1-3":{fare:1320,exp:2250},
+  "1-4":{fare:1940,exp:2250},
+  "1-5":{fare:2210,exp:2250},
+  "1-6":{fare:3350,exp:3000},
+  "1-7":{fare:4000,exp:3860},
+  "1-8":{fare:4430,exp:3860},
+  "1-9":{fare:5080,exp:3860},
+  "1-10":{fare:6260,exp:4620},
+  "1-11":{fare:7340,exp:5060},
+  "1-12":{fare:8210,exp:5390},
+  "1-13":{fare:8750,exp:5390},
+
+  "2-3":{fare:970,exp:980},
+  "2-4":{fare:1320,exp:2250},
+  "2-5":{fare:1660,exp:2250},
+  "2-6":{fare:2590,exp:3000},
+  "2-7":{fare:3670,exp:3860},
+  "2-8":{fare:4000,exp:3860},
+  "2-9":{fare:4750,exp:3860},
+  "2-10":{fare:5620,exp:4620},
+  "2-11":{fare:6800,exp:5060},
+  "2-12":{fare:7880,exp:5060},
+  "2-13":{fare:8420,exp:5390},
+
+  "3-4":{fare:410,exp:860},
+  "3-5":{fare:670,exp:2250},
+  "3-6":{fare:1660,exp:2250},
+  "3-7":{fare:2590,exp:3000},
+  "3-8":{fare:3020,exp:3000},
+  "3-9":{fare:3670,exp:3860},
+  "3-10":{fare:5080,exp:3860},
+  "3-11":{fare:6260,exp:4620},
+  "3-12":{fare:7020,exp:5060},
+  "3-13":{fare:7560,exp:5060},
+
+  "4-5":{fare:320,exp:860},
+  "4-6":{fare:1320,exp:2250},
+  "4-7":{fare:2270,exp:3000},
+  "4-8":{fare:2590,exp:3000},
+  "4-9":{fare:3350,exp:3000},
+  "4-10":{fare:4750,exp:3860},
+  "4-11":{fare:5940,exp:4620},
+  "4-12":{fare:6800,exp:5060},
+  "4-13":{fare:7340,exp:5060},
+
+  "5-6":{fare:970,exp:980},
+  "5-7":{fare:1940,exp:3000},
+  "5-8":{fare:2270,exp:3000},
+  "5-9":{fare:3020,exp:3000},
+  "5-10":{fare:4430,exp:3860},
+  "5-11":{fare:5620,exp:4620},
+  "5-12":{fare:6480,exp:4620},
+  "5-13":{fare:7020,exp:5060},
+
+  "6-7":{fare:840,exp:860},
+  "6-8":{fare:1320,exp:980},
+  "6-9":{fare:1940,exp:3000},
+  "6-10":{fare:3350,exp:3000},
+  "6-11":{fare:4750,exp:3860},
+  "6-12":{fare:5620,exp:4620},
+  "6-13":{fare:6260,exp:4620},
+
+  "7-8":{fare:500,exp:860},
+  "7-9":{fare:1140,exp:2250},
+  "7-10":{fare:2270,exp:3000},
+  "7-11":{fare:3670,exp:3860},
+  "7-12":{fare:5080,exp:3860},
+  "7-13":{fare:5620,exp:4610},
+
+  "8-9":{fare:670,exp:860},
+  "8-10":{fare:1940,exp:3000},
+  "8-11":{fare:3350,exp:3000},
+  "8-12":{fare:4430,exp:3860},
+  "8-13":{fare:5060,exp:3860},
+
+  "9-10":{fare:1320,exp:980},
+  "9-11":{fare:2590,exp:3000},
+  "9-12":{fare:3670,exp:3860},
+  "9-13":{fare:4750,exp:3860},
+
+  "10-11":{fare:1320,exp:2250},
+  "10-12":{fare:2590,exp:3000},
+  "10-13":{fare:3350,exp:3000},
+
+  "11-12":{fare:1140,exp:980},
+  "11-13":{fare:1940,exp:3000},
+
+  "12-13":{fare:560,exp:860}
+
+};
+
+
+/* ===============================================================
+   新幹線所要時間
+   こだま基準・分
+=============================================================== */
+
+const SHINKANSEN_TIME = {
+
+  "0-1":6,
+  "0-2":16,
+  "0-3":31,
+
+  "1-2":10,
+  "1-3":25,
+  "2-3":15,
+
+  "3-4":7,
+  "4-5":7,
+  "5-6":18,
+  "6-7":13,
+  "7-8":11,
+  "8-9":11,
+  "9-10":25,
+  "10-11":22,
+  "11-12":18,
+  "12-13":17
+
+};
+
+
+/* ===============================================================
+   在来線所要時間
+=============================================================== */
+
+const LOCAL_TIME = {
+
+  "0-3":81,
+
+  "3-4":23,
+  "4-5":13,
+  "5-6":63,
+  "6-7":47,
+  "7-8":27,
+  "8-9":36,
+  "9-10":57,
+  "10-11":73,
+  "11-12":67,
+  "12-13":24
+
+};
+
+
+/* ===============================================================
+   乗換時間
+=============================================================== */
+
+const TRANSFER_MIN = 30;
+
+
+/* ===============================================================
+   トグル状態
+   true  = 在来線
+   false = 新幹線
+=============================================================== */
+
+const toggleState = {};
+
+
+/* ===============================================================
+   DOM
+=============================================================== */
+
+const startSelect =
+  document.getElementById("startSelect");
+
+const endSelect =
+  document.getElementById("endSelect");
+
+
+/* ===============================================================
+   始点・終点セレクト生成
+=============================================================== */
+
+SELECTABLE_STATIONS.forEach(s=>{
+
+  const o1 = document.createElement("option");
+
+  o1.value = s.index;
+  o1.textContent = s.name;
+
+  startSelect.appendChild(o1);
+
+
+  const o2 = document.createElement("option");
+
+  o2.value = s.index;
+  o2.textContent = s.name;
+
+  endSelect.appendChild(o2);
+
+});
+
+
+startSelect.value = 0;
+endSelect.value = 13;
+
+
+/* ===============================================================
+   始点・終点
+=============================================================== */
+
+function currentRange(){
+
+  const a =
+    parseInt(startSelect.value,10);
+
+  const b =
+    parseInt(endSelect.value,10);
+
+  return [
+    Math.min(a,b),
+    Math.max(a,b)
+  ];
+
+}
+
+
+/* ===============================================================
+   ブロック構築
+=============================================================== */
+
+function buildBlocks(loIdx,hiIdx){
+
+  const blocks = [];
+
+
+  /*
+    東京〜小田原
+
+    品川・新横浜を含むため、
+    ここは一つのブロック。
+  */
+
+  if(loIdx <= 0 && hiIdx >= 3){
+
+    blocks.push({
+
+      from:0,
+      to:3,
+      key:"0-3",
+
+      togglable:true,
+      hasLocal:true,
+
+      label:
+        "東京〜小田原（品川・新横浜通過）"
+
+    });
+
+  }
+  else{
+
+    const subLo =
+      Math.max(loIdx,0);
+
+    const subHi =
+      Math.min(hiIdx,3);
+
+    if(subLo < subHi){
+
+      blocks.push({
+
+        from:subLo,
+        to:subHi,
+
+        key:`${subLo}-${subHi}`,
+
+        togglable:false,
+        hasLocal:false
+
+      });
+
+    }
+
+  }
+
+
+  /*
+    小田原〜新大阪
+  */
+
+  for(let k=3;k<13;k++){
+
+    if(loIdx<=k && hiIdx>=k+1){
+
+      blocks.push({
+
+        from:k,
+        to:k+1,
+
+        key:`${k}-${k+1}`,
+
+        togglable:true,
+        hasLocal:true
+
+      });
+
+    }
+
+  }
+
+
+  return blocks;
+
+}
+
+
+/* ===============================================================
+   特急料金計算
+   ===============================================================
+
+   最重要ロジック。
+
+   「隣接区間ごとの特急料金」を単純に足すのではなく、
+
+      新幹線
+      新幹線
+      新幹線
+      在来線
+      新幹線
+      新幹線
+
+   のような場合、
+
+      最初の連続新幹線区間
+      +
+      次の連続新幹線区間
+
+   として計算する。
+
+   例：
+
+   東京 → 小田原       在来線
+   小田原 → 名古屋     新幹線
+   名古屋 → 米原       在来線
+   米原 → 新大阪       新幹線
+
+   ↓
+
+   小田原 → 名古屋
+   +
+   米原 → 新大阪
+
+   の特急料金を合算する。
+=============================================================== */
+
+function calcExpressFare(blocks){
+
+  let expSum = 0;
+  const rides = [];
+
+  /*
+    全区間新幹線時の特急料金。
+    これは始点〜終点の一つの連続区間。
+  */
+
+  let baseExp = 0;
+
+  if(blocks.length > 0){
+
+    const first = blocks[0];
+    const last = blocks[blocks.length - 1];
+
+    const fullKey =
+      `${first.from}-${last.to}`;
+
+    if(FARE_MATRIX[fullKey]){
+
+      baseExp =
+        FARE_MATRIX[fullKey].exp;
+
+    }
+
+  }
+
+  /*
+    連続する同一モードのブロックを
+    1つの「乗車区間（ライド）」にまとめる。
+    新幹線ライドは、その始点〜終点の
+    通し特急料金を1回だけ課金する。
+  */
+
+  let cur = null;
+
+  blocks.forEach(b=>{
+
+    const isLocal =
+      b.hasLocal &&
+      !!toggleState[b.key];
+
+    const mode =
+      isLocal ? "local" : "shinkansen";
+
+    if(cur && cur.mode === mode){
+
+      cur.to = b.to;
+
+    }else{
+
+      cur = {mode, from:b.from, to:b.to};
+      rides.push(cur);
+
+    }
+
+  });
+
+  rides.forEach(r=>{
+
+    if(r.mode === "shinkansen"){
+
+      const key = `${r.from}-${r.to}`;
+
+      if(FARE_MATRIX[key]){
+
+        expSum += FARE_MATRIX[key].exp;
+
+      }
+
+    }
+
+  });
+
+  return {
+
+    expSum,
+    baseExp,
+    rides
+
+  };
+
+}
+
+
+/* ===============================================================
+   集計
+=============================================================== */
+
+function computeSummary(blocks,throughFare){
+
+  let totalTime = 0;
+
+  let baseTime = 0;
+
+  let switches = 0;
+
+  let prevMode = null;
+
+
+  blocks.forEach(b=>{
+
+    const isLocal =
+      b.hasLocal &&
+      !!toggleState[b.key];
+
+
+    const mode =
+      isLocal
+        ? "local"
+        : "shinkansen";
+
+
+    if(
+      prevMode !== null &&
+      prevMode !== mode
+    ){
+
+      switches++;
+
+    }
+
+
+    prevMode = mode;
+
+
+    const t =
+      isLocal
+        ? LOCAL_TIME[b.key]
+        : SHINKANSEN_TIME[b.key];
+
+
+    totalTime += t;
+
+    baseTime +=
+      SHINKANSEN_TIME[b.key];
+
+  });
+
+
+  /*
+    乗換時間
+  */
+
+  totalTime +=
+    switches * TRANSFER_MIN;
+
+
+  /*
+    特急料金
+  */
+
+  const express =
+    calcExpressFare(blocks);
+
+
+  const expSum =
+    express.expSum;
+
+  const baseExpSum =
+    express.baseExp;
+
+  const rides =
+    express.rides;
+
+
+  return {
+
+    totalTime,
+    baseTime,
+
+    switches,
+
+    throughFare,
+
+    expSum,
+    baseExpSum,
+    rides,
+
+    totalFare:
+      throughFare + expSum,
+
+    baseFare:
+      throughFare + baseExpSum
+
+  };
+
+}
+
+
+/* ===============================================================
+   現在のルートをトグル状態から取得
+=============================================================== */
+
+function getCurrentRouteDescription(blocks){
+
+  return blocks.map(b=>{
+
+    const isLocal =
+      b.hasLocal &&
+      !!toggleState[b.key];
+
+    const from =
+      STATIONS[b.from].name;
+
+    const to =
+      STATIONS[b.to].name;
+
+    return {
+
+      from,
+      to,
+      local:isLocal
+
+    };
+
+  });
+
+}
+
+
+/* ===============================================================
+   参考ルート探索
+===============================================================
+
+   切替可能な区間について、
+
+   新幹線 = 0
+   在来線 = 1
+
+   の全組み合わせを総当たりする。
+
+   区間数は最大11程度なので、
+   2^11 = 2048通り。
+
+   十分軽いので、PC上で完全に自動探索できる。
+
+   評価条件：
+
+   1. 全区間新幹線からの時間増加 <= 許容値
+   2. その中で特急料金が最小
+   3. 同額なら時間増加が小さい方
+=============================================================== */
+
+function findReferenceRoute(maxIncrease){
+
+  const [loIdx,hiIdx] =
+    currentRange();
+
+
+  if(loIdx === hiIdx){
+
+    return null;
+
+  }
+
+
+  const blocks =
+    buildBlocks(loIdx,hiIdx);
+
+
+  const toggleBlocks =
+    blocks.filter(b=>b.togglable);
+
+
+  if(toggleBlocks.length === 0){
+
+    return null;
+
+  }
+
+
+  /*
+    現在の状態を保存
+  */
+
+  const originalState = {};
+
+  Object.keys(toggleState).forEach(k=>{
+
+    originalState[k] =
+      toggleState[k];
+
+  });
+
+
+  let best = null;
+
+
+  const n =
+    toggleBlocks.length;
+
+
+  const totalPatterns =
+    Math.pow(2,n);
+
+
+  for(
+    let mask=0;
+    mask<totalPatterns;
+    mask++
+  ){
+
+    /*
+      仮想的に状態を設定
+    */
+
+    toggleBlocks.forEach((b,i)=>{
+
+      toggleState[b.key] =
+        !!(mask & (1<<i));
+
+    });
+
+
+    /*
+      運賃は固定
+    */
+
+    const throughFare =
+      FARE_MATRIX[
+        `${loIdx}-${hiIdx}`
+      ].fare;
+
+
+    const sum =
+      computeSummary(
+        blocks,
+        throughFare
+      );
+
+
+    const timeIncrease =
+      sum.totalTime -
+      sum.baseTime;
+
+
+    /*
+      許容時間を超えるものは除外
+    */
+
+    if(timeIncrease > maxIncrease){
+
+      continue;
+
+    }
+
+
+    /*
+      節約額
+    */
+
+    const saving =
+      sum.baseExpSum -
+      sum.expSum;
+
+
+    if(best === null){
+
+      best = {
+
+        mask,
+        totalTime:sum.totalTime,
+        baseTime:sum.baseTime,
+
+        expSum:sum.expSum,
+        baseExp:sum.baseExpSum,
+
+        totalFare:sum.totalFare,
+        baseFare:sum.baseFare,
+
+        timeIncrease,
+        saving,
+
+        switches:sum.switches
+
+      };
+
+    }
+    else{
+
+      /*
+        第一条件：
+        特急料金最大節約
+
+        第二条件：
+        時間増加が少ない
+
+        第三条件：
+        乗換回数が少ない
+      */
+
+      if(
+
+        saving > best.saving ||
+
+        (
+          saving === best.saving &&
+          timeIncrease < best.timeIncrease
+        ) ||
+
+        (
+          saving === best.saving &&
+          timeIncrease === best.timeIncrease &&
+          sum.switches < best.switches
+        )
+
+      ){
+
+        best = {
+
+          mask,
+
+          totalTime:sum.totalTime,
+          baseTime:sum.baseTime,
+
+          expSum:sum.expSum,
+          baseExp:sum.baseExpSum,
+
+          totalFare:sum.totalFare,
+          baseFare:sum.baseFare,
+
+          timeIncrease,
+          saving,
+
+          switches:sum.switches
+
+        };
+
+      }
+
+    }
+
+  }
+
+
+  /*
+    状態を元に戻す
+  */
+
+  Object.keys(toggleState).forEach(k=>{
+
+    delete toggleState[k];
+
+  });
+
+
+  Object.keys(originalState).forEach(k=>{
+
+    toggleState[k] =
+      originalState[k];
+
+  });
+
+
+  /*
+    最適解なし
+  */
+
+  if(best === null){
+
+    return null;
+
+  }
+
+
+  /*
+    最適解のビット列から
+    ルートを復元
+  */
+
+  toggleBlocks.forEach((b,i)=>{
+
+    if(best.mask & (1<<i)){
+
+      toggleState[b.key] = true;
+
+    }
+    else{
+
+      toggleState[b.key] = false;
+
+    }
+
+  });
+
+
+  const route =
+    getCurrentRouteDescription(blocks);
+
+
+  /*
+    再び元の状態に戻す
+  */
+
+  Object.keys(toggleState).forEach(k=>{
+
+    delete toggleState[k];
+
+  });
+
+
+  Object.keys(originalState).forEach(k=>{
+
+    toggleState[k] =
+      originalState[k];
+
+  });
+
+
+  return {
+
+    ...best,
+    route
+
+  };
+
+}
+
+
+/* ===============================================================
+   参考ルート描画
+=============================================================== */
+
+function renderReference(){
+
+  const resultEl =
+    document.getElementById(
+      "referenceResult"
+    );
+
+
+  const maxIncrease =
+    parseInt(
+      document.getElementById(
+        "maxIncrease"
+      ).value,
+      10
+    );
+
+
+  if(
+    Number.isNaN(maxIncrease) ||
+    maxIncrease < 0
+  ){
+
+    resultEl.className =
+      "reference-result empty";
+
+    resultEl.textContent =
+      "許容時間増加を0分以上で入力してください。";
+
+    return;
+
+  }
+
+
+  const result =
+    findReferenceRoute(
+      maxIncrease
+    );
+
+
+  if(!result){
+
+    resultEl.className =
+      "reference-result empty";
+
+    resultEl.textContent =
+      "この条件では参考ルートを見つけられませんでした。";
+
+    return;
+
+  }
+
+
+  resultEl.className =
+    "reference-result";
+
+
+  const routeHTML =
+    result.route.map(r=>{
+
+      const mode =
+        r.local
+          ? `<span class="route-local">在来線</span>`
+          : `<span class="route-shink">新幹線</span>`;
+
+      return `
+        <div>
+          <strong>${r.from} → ${r.to}</strong>
+          ：${mode}
+        </div>
+      `;
+
+    }).join("");
+
+
+  resultEl.innerHTML = `
+
+    <div class="reference-summary">
+
+      <div class="reference-metric">
+        <div class="label">
+          特急料金
+        </div>
+        <div class="value">
+          ${result.expSum.toLocaleString()}円
+        </div>
+      </div>
+
+      <div class="reference-metric">
+        <div class="label">
+          節約額
+        </div>
+        <div class="value">
+          ${result.saving.toLocaleString()}円
+        </div>
+      </div>
+
+      <div class="reference-metric">
+        <div class="label">
+          所要時間
+        </div>
+        <div class="value">
+          ${formatMinutes(result.totalTime)}
+        </div>
+      </div>
+
+      <div class="reference-metric">
+        <div class="label">
+          時間増加
+        </div>
+        <div class="value">
+          +${result.timeIncrease}分
+        </div>
+      </div>
+
+    </div>
+
+
+    <div class="reference-route">
+
+      <strong>
+        参考ルート
+      </strong>
+
+      ${routeHTML}
+
+      <div style="margin-top:8px;color:var(--slate);">
+        乗換：${result.switches}回
+        ／
+        合計コスト：${result.totalFare.toLocaleString()}円
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* ===============================================================
+   分を「○時間○分」に変換
+=============================================================== */
+
+function formatMinutes(minutes){
+
+  const h =
+    Math.floor(minutes / 60);
+
+  const m =
+    minutes % 60;
+
+
+  if(h === 0){
+
+    return `${m}分`;
+
+  }
+
+
+  if(m === 0){
+
+    return `${h}時間`;
+
+  }
+
+
+  return `${h}時間${m}分`;
+
+}
+
+
+/* ===============================================================
+   路線ストリップ描画
+=============================================================== */
+
+function renderStrip(loIdx,hiIdx){
+
+  const dotsWrap =
+    document.getElementById(
+      "stripDots"
+    );
+
+
+  dotsWrap.innerHTML = "";
+
+
+  STATIONS.forEach((s,i)=>{
+
+    const d =
+      document.createElement("div");
+
+
+    const within =
+      i>=loIdx &&
+      i<=hiIdx;
+
+
+    const edge =
+      i===loIdx ||
+      i===hiIdx;
+
+
+    d.className =
+      "strip-dot" +
+      (within ? " on" : "") +
+      (edge ? " edge" : "");
+
+
+    d.title =
+      s.name;
+
+
+    dotsWrap.appendChild(d);
+
+  });
+
+}
+
+
+/* ===============================================================
+   メイン描画
+=============================================================== */
+
+function render(){
+
+  const [loIdx,hiIdx] =
+    currentRange();
+
+
+  const reverse =
+    parseInt(
+      startSelect.value,
+      10
+    ) >
+    parseInt(
+      endSelect.value,
+      10
+    );
+
+
+  /*
+    始点と終点が同じ
+  */
+
+  if(
+    startSelect.value ===
+    endSelect.value
+  ){
+
+    document.getElementById(
+      "segmentsWrap"
+    ).innerHTML = `
+
+      <div
+        class="seg-card"
+        style="
+          text-align:center;
+          color:var(--slate);
+        "
+      >
+        始点と終点に同じ駅は選べません
+      </div>
+
+    `;
+
+
+    document.getElementById(
+      "resultTotalCost"
+    ).textContent =
+      "--円";
+
+    document.getElementById(
+      "resultFare"
+    ).textContent =
+      "--円";
+
+    document.getElementById(
+      "resultExp"
+    ).textContent =
+      "--円";
+
+    document.getElementById(
+      "resultTime"
+    ).textContent =
+      "--分";
+
+
+    document.getElementById(
+      "totalTime"
+    ).innerHTML =
+      "--<small>分</small>";
+
+
+    document.getElementById(
+      "totalFare"
+    ).innerHTML =
+      "--<small>円</small>";
+
+
+    renderStrip(
+      loIdx,
+      hiIdx
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+    ブロック
+  */
+
+  const blocks =
+    buildBlocks(
+      loIdx,
+      hiIdx
+    );
+
+
+  /*
+    表示方向
+  */
+
+  const displayBlocks =
+    reverse
+      ? [...blocks].reverse()
+      : blocks;
+
+
+  const wrap =
+    document.getElementById(
+      "segmentsWrap"
+    );
+
+
+  wrap.innerHTML = "";
+
+  /*
+    運賃は始点〜終点で固定。
+    特急料金は連続する新幹線区間ごとに
+    計算されるため、個々のブロック単独の
+    金額を足し合わせても正しい値にならない。
+
+    そのため各カードの「切替の影響」は、
+    そのブロックだけ仮に反転させて
+    computeSummary を再計算し、
+    現在の合計との差分として求める。
+  */
+
+  const throughFare =
+    FARE_MATRIX[
+      `${loIdx}-${hiIdx}`
+    ].fare;
+
+  const sum =
+    computeSummary(
+      blocks,
+      throughFare
+    );
+
+  function simulateToggleImpact(key){
+    const orig = toggleState[key];
+    toggleState[key] = !orig;
+    const alt = computeSummary(blocks, throughFare);
+    toggleState[key] = orig;
+    return {
+      timeDelta: alt.totalTime - sum.totalTime,
+      fareDelta: alt.totalFare - sum.totalFare,
+    };
+  }
+
+  // 現在の乗車区分（連続する同一モードは1回の乗車としてまとめて特急料金を計算）
+  const ridesForDisplay =
+    reverse ? [...sum.rides].reverse() : sum.rides;
+
+  const composePanel =
+    document.createElement("div");
+  composePanel.className = "compose-panel";
+  composePanel.innerHTML =
+    `<div class="compose-title">現在の乗車区分（連続する新幹線区間は1回の通し特急料金）</div>` +
+    ridesForDisplay.map(r=>{
+      const fromN = STATIONS[reverse ? r.to : r.from].name;
+      const toN = STATIONS[reverse ? r.from : r.to].name;
+      const isLocalRide = r.mode === "local";
+      const exp = isLocalRide ? 0 : (FARE_MATRIX[`${r.from}-${r.to}`]?.exp ?? 0);
+      return `<div class="compose-row ${isLocalRide?'local':''}">
+        <span class="compose-mode">${isLocalRide ? "在来線" : "新幹線"}</span>
+        <span class="compose-span">${fromN} → ${toN}</span>
+        <span class="compose-fee">${isLocalRide ? "特急料金 0円" : `特急料金 ${exp.toLocaleString()}円（通し）`}</span>
+      </div>`;
+    }).join("");
+  wrap.appendChild(composePanel);
+
+  let prevMode = null;
+
+
+  displayBlocks.forEach(b=>{
+
+    const isLocal =
+      b.hasLocal &&
+      !!toggleState[b.key];
+
+
+    const mode =
+      isLocal
+        ? "local"
+        : "shinkansen";
+
+
+    /*
+      乗換チップ
+    */
+
+    if(
+      prevMode !== null &&
+      prevMode !== mode
+    ){
+
+      const chip =
+        document.createElement(
+          "div"
+        );
+
+
+      chip.className =
+        "transfer-chip";
+
+
+      const stationIndex =
+        reverse
+          ? b.to
+          : b.from;
+
+
+      const stationName =
+        STATIONS[
+          stationIndex
+        ].name;
+
+
+      chip.innerHTML = `
+
+        <span>
+          ⇄ 乗換 +${TRANSFER_MIN}分
+          （${stationName}）
+        </span>
+
+      `;
+
+
+      wrap.appendChild(
+        chip
+      );
+
+    }
+
+
+    prevMode =
+      mode;
+
+
+    /*
+      表示方向
+    */
+
+    const fromName =
+      STATIONS[
+        reverse ? b.to : b.from
+      ].name;
+
+
+    const toName =
+      STATIONS[
+        reverse ? b.from : b.to
+      ].name;
+
+
+    /*
+      カード
+    */
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+
+    card.className =
+      "seg-card";
+
+
+    const fareObj =
+      FARE_MATRIX[b.key];
+
+
+    const shinkTime =
+      SHINKANSEN_TIME[b.key];
+
+
+    const localTime =
+      b.hasLocal
+        ? LOCAL_TIME[b.key]
+        : null;
+
+
+    const curTime =
+      isLocal
+        ? localTime
+        : shinkTime;
+
+    // このブロック単独の特急料金は「連続する新幹線区間」に
+    // 束ねられた時点で意味を持たないため表示しない。
+    // 代わりに、このブロックだけ切り替えたときの
+    // 全体合計（所要時間・合計金額）への影響を使う。
+    const impact =
+      b.togglable
+        ? simulateToggleImpact(b.key)
+        : null;
+
+
+    card.innerHTML = `
+
+      <div class="seg-top">
+
+        <div>
+
+          <div class="seg-name">
+
+            ${fromName}
+
+            <span class="arrow">
+              →
+            </span>
+
+            ${toName}
+
+          </div>
+
+
+          ${
+            b.label
+              ? `
+                <div class="seg-block-label">
+                  ${b.label}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+
+
+        ${
+          b.togglable
+
+            ? `
+
+              <button
+                class="toggle ${
+                  isLocal
+                    ? "is-local"
+                    : ""
+                }"
+                data-key="${b.key}"
+              >
+
+                <span>
+                  新幹線
+                </span>
+
+                <span>
+                  在来線
+                </span>
+
+                <span class="knob"></span>
+
+              </button>
+
+            `
+
+            : `
+
+              <button
+                class="toggle disabled"
+                disabled
+              >
+
+                <span>
+                  新幹線
+                </span>
+
+                <span>
+                  固定
+                </span>
+
+                <span class="knob"></span>
+
+              </button>
+
+            `
+        }
+
+      </div>
+
+
+      <div class="seg-bottom">
+
+        <div
+          class="metric ${
+            isLocal ? "local" : ""
+          }"
+        >
+
+          <div class="label">
+            所要時間
+          </div>
+
+          <div class="value">
+            ${curTime}分
+          </div>
+
+        </div>
+
+
+        <div
+          class="metric ${
+            isLocal ? "local" : ""
+          }"
+        >
+
+          <div class="label">
+            現在のモード
+          </div>
+
+          <div class="value">
+            ${isLocal ? "在来線" : "新幹線"}
+          </div>
+
+        </div>
+
+
+        ${
+          b.togglable
+
+            ? `
+
+              <div
+                class="metric"
+                style="opacity:.7;"
+              >
+
+                <div class="label">
+                  切替時の全体への影響
+                </div>
+
+                <div class="value" style="font-size:12.5px;">
+
+                  ${impact.timeDelta>=0?"+":""}${impact.timeDelta}分
+                  /
+                  ${impact.fareDelta>=0?"+":""}${impact.fareDelta.toLocaleString()}円
+
+                </div>
+
+              </div>
+
+            `
+
+            : `
+
+              <div class="disabled-note">
+
+                品川・新横浜は新幹線通過駅のため
+                在来線を単独選択できません
+
+              </div>
+
+            `
+        }
+
+      </div>
+
+    `;
+
+
+    wrap.appendChild(
+      card
+    );
+
+  });
+
+
+  /*
+    トグルイベント
+  */
+
+  wrap
+    .querySelectorAll(
+      ".toggle[data-key]"
+    )
+    .forEach(btn=>{
+
+      btn.addEventListener(
+        "click",
+        ()=>{
+
+          const k =
+            btn.dataset.key;
+
+
+          toggleState[k] =
+            !toggleState[k];
+
+
+          render();
+
+        }
+      );
+
+    });
+
+
+  /*
+    サマリー（運賃・特急料金は
+    ループ開始前に既に計算済み）
+  */
+
+  const timeDiff =
+    sum.totalTime -
+    sum.baseTime;
+
+
+  const expDiff =
+    sum.expSum -
+    sum.baseExpSum;
+
+
+  const totalDiff =
+    sum.totalFare -
+    sum.baseFare;
+
+
+  /*
+    上部の現在結果
+  */
+
+  document.getElementById(
+    "resultTotalCost"
+  ).textContent =
+    `${sum.totalFare.toLocaleString()}円`;
+
+
+  document.getElementById(
+    "resultTotalDiff"
+  ).textContent =
+
+    totalDiff === 0
+
+      ? "全区間新幹線と同額"
+
+      : `全区間新幹線比 ${
+          totalDiff > 0 ? "+" : ""
+        }${totalDiff.toLocaleString()}円`;
+
+
+  /*
+    運賃
+  */
+
+  document.getElementById(
+    "resultFare"
+  ).textContent =
+    `${sum.throughFare.toLocaleString()}円`;
+
+
+  /*
+    特急料金
+  */
+
+  document.getElementById(
+    "resultExp"
+  ).textContent =
+    `${sum.expSum.toLocaleString()}円`;
+
+
+  document.getElementById(
+    "resultExpDiff"
+  ).textContent =
+
+    expDiff === 0
+
+      ? "全区間新幹線と同額"
+
+      : `全区間新幹線比 ${
+          expDiff > 0 ? "+" : ""
+        }${expDiff.toLocaleString()}円`;
+
+
+  /*
+    所要時間
+  */
+
+  document.getElementById(
+    "resultTime"
+  ).textContent =
+    formatMinutes(
+      sum.totalTime
+    );
+
+
+  document.getElementById(
+    "resultTimeDiff"
+  ).textContent =
+
+    timeDiff === 0
+
+      ? "全区間新幹線と同じ"
+
+      : `全区間新幹線比 +${timeDiff}分`;
+
+
+  /*
+    フッター
+  */
+
+  document.getElementById(
+    "totalTime"
+  ).innerHTML =
+    `${sum.totalTime}<small>分</small>`;
+
+
+  document.getElementById(
+    "totalFare"
+  ).innerHTML =
+    `${sum.totalFare.toLocaleString()}<small>円</small>`;
+
+
+  const timeDiffEl =
+    document.getElementById(
+      "timeDiff"
+    );
+
+
+  const fareDiffEl =
+    document.getElementById(
+      "fareDiff"
+    );
+
+
+  if(
+    timeDiff === 0 &&
+    expDiff === 0
+  ){
+
+    timeDiffEl.textContent =
+      "全区間 新幹線利用中";
+
+    timeDiffEl.classList.add(
+      "zero"
+    );
+
+
+    fareDiffEl.textContent =
+      `運賃(固定) ${
+        sum.throughFare.toLocaleString()
+      }円 + 特急料金 ${
+        sum.expSum.toLocaleString()
+      }円`;
+
+  }
+  else{
+
+    timeDiffEl.classList.remove(
+      "zero"
+    );
+
+
+    timeDiffEl.textContent =
+      `新幹線比 +${timeDiff}分` +
+      `（乗換${sum.switches}回込み）`;
+
+
+    fareDiffEl.textContent =
+      `運賃(固定) ${
+        sum.throughFare.toLocaleString()
+      }円 + 特急料金 ${
+        sum.expSum.toLocaleString()
+      }円 ／ ` +
+      `特急料金差額 ${
+        expDiff.toLocaleString()
+      }円`;
+
+  }
+
+
+  /*
+    路線ストリップ
+  */
+
+  renderStrip(
+    loIdx,
+    hiIdx
+  );
+
+}
+
+
+/* ===============================================================
+   ボタンイベント
+=============================================================== */
+
+
+/*
+  始点・終点入れ替え
+*/
+
+document
+  .getElementById("swapBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      const a =
+        startSelect.value;
+
+      startSelect.value =
+        endSelect.value;
+
+      endSelect.value =
+        a;
+
+      render();
+
+    }
+  );
+
+
+/*
+  始点変更
+*/
+
+startSelect.addEventListener(
+  "change",
+  ()=>{
+
+    /*
+      新しい区間を選んだとき、
+      その区間にない古いトグル状態は
+      残っていても計算には影響しない。
+    */
+
+    render();
+
+  }
+);
+
+
+/*
+  終点変更
+*/
+
+endSelect.addEventListener(
+  "change",
+  ()=>{
+
+    render();
+
+  }
+);
+
+
+/*
+  全区間新幹線
+*/
+
+document
+  .getElementById("resetBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      Object.keys(
+        toggleState
+      ).forEach(k=>{
+
+        toggleState[k] =
+          false;
+
+      });
+
+      render();
+
+    }
+  );
+
+
+/*
+  全区間在来線
+*/
+
+document
+  .getElementById("allLocalBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+
+      const blocks =
+        buildBlocks(
+          ...currentRange()
+        );
+
+
+      blocks.forEach(b=>{
+
+        if(b.hasLocal){
+
+          toggleState[b.key] =
+            true;
+
+        }
+
+      });
+
+
+      render();
+
+    }
+  );
+
+
+/*
+  参考ルート計算
+*/
+
+document
+  .getElementById("referenceBtn")
+  .addEventListener(
+    "click",
+    renderReference
+  );
+
+
+/*
+  時間上限を変更してEnterでも計算
+*/
+
+document
+  .getElementById("maxIncrease")
+  .addEventListener(
+    "keydown",
+    e=>{
+
+      if(e.key === "Enter"){
+
+        renderReference();
+
+      }
+
+    }
+  );
+
+
+/* ===============================================================
+   タブ切り替え
+=============================================================== */
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const target = btn.dataset.tab;
+
+    document.querySelectorAll(".tab-btn").forEach(b=>{
+      b.classList.toggle("active", b===btn);
+    });
+
+    document.getElementById("tabPanelShinkansen").classList.toggle("active", target==="shinkansen");
+    document.getElementById("tabPanelSeishun18").classList.toggle("active", target==="seishun18");
+
+    document.body.style.paddingBottom = (target==="shinkansen") ? "130px" : "20px";
+
+    if(target==="seishun18"){
+      renderSeishun18();
+    }
+  });
+});
+
+
+/* ===============================================================
+   青春18きっぷ シミュレーター
+   ===============================================================
+
+   考え方：
+   ・青春18きっぷ自体は普通/快速列車が乗り放題（既に payed 済み、
+     ここでの追加予算には含めない）。
+   ・新幹線に乗る区間だけ、別途「運賃＋特急料金」がかかる
+     （18きっぷは新幹線に通用しないため）。
+   ・「連続する新幹線区間」はまとめて1回の通し運賃＋特急料金
+     として計算する（新幹線⇄在来線タブと同じ考え方）。
+   ・所要時間の短縮は、乗換ロスを考慮せず、
+     普通列車所要時間と新幹線所要時間の単純な差の合計。
+=============================================================== */
+
+// 普通列車所要時間（分）／隣接13区間すべてに定義（品川・新横浜も含む）
+const LOCAL_TIME_18 = {
+  "0-1":7,     // 東京-品川
+  "1-2":36,    // 品川-新横浜
+  "2-3":38,    // 新横浜-小田原（東京〜小田原81分から7分・36分を差し引いた残り）
+  "3-4":23,    // 小田原-熱海
+  "4-5":13,    // 熱海-三島
+  "5-6":63,    // 三島-静岡
+  "6-7":47,    // 静岡-掛川
+  "7-8":27,    // 掛川-浜松
+  "8-9":36,    // 浜松-豊橋
+  "9-10":57,   // 豊橋-名古屋
+  "10-11":73,  // 名古屋-米原
+  "11-12":67,  // 米原-京都
+  "12-13":24,  // 京都-新大阪
+};
+
+const s18StartSelect = document.getElementById("s18StartSelect");
+const s18EndSelect = document.getElementById("s18EndSelect");
+
+STATIONS.forEach((s,i)=>{
+  const o1 = document.createElement("option");
+  o1.value = i; o1.textContent = s.name;
+  s18StartSelect.appendChild(o1);
+
+  const o2 = document.createElement("option");
+  o2.value = i; o2.textContent = s.name;
+  s18EndSelect.appendChild(o2);
+});
+s18StartSelect.value = 0;
+s18EndSelect.value = 13;
+
+document.getElementById("s18SwapBtn").addEventListener("click", ()=>{
+  const a = s18StartSelect.value;
+  s18StartSelect.value = s18EndSelect.value;
+  s18EndSelect.value = a;
+  renderSeishun18();
+});
+s18StartSelect.addEventListener("change", renderSeishun18);
+s18EndSelect.addEventListener("change", renderSeishun18);
+document.getElementById("s18SearchBtn").addEventListener("click", renderSeishun18);
+document.getElementById("s18Budget").addEventListener("keydown", e=>{
+  if(e.key==="Enter") renderSeishun18();
+});
+
+// 始点〜終点の13区間のうち、選択範囲に含まれるものだけを取り出す
+function buildSeishun18Segments(loIdx, hiIdx){
+  const segs = [];
+  for(let k=loIdx; k<hiIdx; k++){
+    segs.push({from:k, to:k+1, key:`${k}-${k+1}`});
+  }
+  return segs;
+}
+
+// 全区間普通列車の所要時間（基準値）
+function seishun18Baseline(segs){
+  return segs.reduce((sum,seg)=> sum + LOCAL_TIME_18[seg.key], 0);
+}
+
+// 特定の新幹線利用パターン（mask）での 所要時間・追加費用 を計算
+// mask のビット i が1なら segs[i] は新幹線利用
+function evaluateSeishun18Pattern(segs, mask){
+  let time = 0;
+  segs.forEach((seg,i)=>{
+    const useShink = !!(mask & (1<<i));
+    time += useShink ? SHINKANSEN_TIME[seg.key] : LOCAL_TIME_18[seg.key];
+  });
+
+  // 連続する新幹線区間をまとめて、通しの運賃+特急料金を1回ずつ加算
+  let cost = 0;
+  let cur = null;
+  segs.forEach((seg,i)=>{
+    const useShink = !!(mask & (1<<i));
+    if(useShink){
+      if(cur===null) cur = {from:seg.from, to:seg.to};
+      else cur.to = seg.to;
+    }else if(cur){
+      const f = FARE_MATRIX[`${cur.from}-${cur.to}`];
+      cost += f.fare + f.exp;
+      cur = null;
+    }
+  });
+  if(cur){
+    const f = FARE_MATRIX[`${cur.from}-${cur.to}`];
+    cost += f.fare + f.exp;
+  }
+
+  return {time, cost};
+}
+
+// 新幹線利用パターンを新幹線区間の集合として復元（表示用）
+function describeSeishun18Pattern(segs, mask, reverse){
+  const runs = [];
+  let cur = null;
+  segs.forEach((seg,i)=>{
+    const useShink = !!(mask & (1<<i));
+    const mode = useShink ? "shinkansen" : "local";
+    if(cur && cur.mode===mode){
+      cur.to = seg.to;
+    }else{
+      cur = {mode, from:seg.from, to:seg.to};
+      runs.push(cur);
+    }
+  });
+  return reverse ? runs.slice().reverse() : runs;
+}
+
+// 予算内で「その予算で達成できる最短時間」のパレート最適点を求め、
+// 最大5件（等間隔サンプリング）を削減時間が多い順に返す
+function findSeishun18Routes(loIdx, hiIdx, budget){
+  const segs = buildSeishun18Segments(loIdx, hiIdx);
+  const n = segs.length;
+  const baseline = seishun18Baseline(segs);
+
+  if(n===0){
+    return {segs, baseline, picks:[]};
+  }
+
+  const totalPatterns = 1 << n;  // n<=13 -> 最大8192通り。十分軽い。
+  const candidates = [];
+
+  for(let mask=0; mask<totalPatterns; mask++){
+    if(mask===0) continue; // 0円（全区間普通列車＝基準値）は候補から除外。baseline表示に既出のため。
+    const {time, cost} = evaluateSeishun18Pattern(segs, mask);
+    if(cost <= budget){
+      candidates.push({mask, time, cost});
+    }
+  }
+
+  // 予算が小さい順、同額なら時間が短い順
+  candidates.sort((a,b)=> a.cost - b.cost || a.time - b.time);
+
+  // パレート最適（コストが増えるごとに時間が必ず改善する点）だけを残す
+  const frontier = [];
+  let bestTime = Infinity;
+  candidates.forEach(c=>{
+    if(c.time < bestTime){
+      frontier.push(c);
+      bestTime = c.time;
+    }
+  });
+
+  // 最大5件を等間隔に抽出（安いだけ／速いだけに偏らないように）
+  let picks;
+  if(frontier.length <= 5){
+    picks = frontier;
+  }else{
+    picks = [];
+    for(let i=0;i<5;i++){
+      const idx = Math.round(i * (frontier.length-1) / 4);
+      picks.push(frontier[idx]);
+    }
+    picks = picks.filter((p,idx)=> idx===0 || p!==picks[idx-1]);
+  }
+
+  // 表示順は「削減時間が多い順」（＝所要時間が短い順）。
+  // 予算内であることは既に保証済みなので、あとは短縮効果の大きい候補から見せる。
+  picks = picks.slice().sort((a,b)=> a.time - b.time);
+
+  return {segs, baseline, picks};
+}
+
+function formatMinutesShort(min){
+  const h = Math.floor(min/60);
+  const m = min % 60;
+  return h>0 ? `${h}時間${m}分` : `${m}分`;
+}
+
+function renderSeishun18(){
+  const loIdx = Math.min(parseInt(s18StartSelect.value,10), parseInt(s18EndSelect.value,10));
+  const hiIdx = Math.max(parseInt(s18StartSelect.value,10), parseInt(s18EndSelect.value,10));
+  const reverse = parseInt(s18StartSelect.value,10) > parseInt(s18EndSelect.value,10);
+
+  const baselineEl = document.getElementById("s18Baseline");
+  const resultsEl = document.getElementById("s18Results");
+
+  if(s18StartSelect.value === s18EndSelect.value){
+    baselineEl.innerHTML = "&nbsp;";
+    resultsEl.innerHTML = `<div class="s18-empty">始点と終点に同じ駅は選べません</div>`;
+    return;
+  }
+
+  const budgetInput = document.getElementById("s18Budget");
+  const budget = parseInt(budgetInput.value, 10);
+
+  if(Number.isNaN(budget) || budget < 0){
+    baselineEl.innerHTML = "&nbsp;";
+    resultsEl.innerHTML = `<div class="s18-empty">予算を0円以上で入力してください。</div>`;
+    return;
+  }
+
+  const {segs, baseline, picks} = findSeishun18Routes(loIdx, hiIdx, budget);
+
+  baselineEl.textContent =
+    `青春18きっぷのみ（全区間普通列車）の所要時間：${formatMinutesShort(baseline)}`;
+
+  if(picks.length===0){
+    resultsEl.innerHTML = `<div class="s18-empty">この予算では新幹線区間を追加できませんでした（全区間普通列車のみになります）。</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = picks.map((p, idx)=>{
+    const saved = baseline - p.time;
+    const runs = describeSeishun18Pattern(segs, p.mask, reverse);
+
+    const routeHTML = runs.map(r=>{
+      const fromN = STATIONS[reverse ? r.to : r.from].name;
+      const toN = STATIONS[reverse ? r.from : r.to].name;
+      const isShink = r.mode==="shinkansen";
+      let feeText = "";
+      if(isShink){
+        const f = FARE_MATRIX[`${r.from}-${r.to}`];
+        feeText = `運賃${f.fare.toLocaleString()}円+特急料金${f.exp.toLocaleString()}円`;
+      }
+      return `<div class="s18-route-row ${isShink?'':'local'}">
+        <span class="s18-route-mode">${isShink ? "新幹線" : "普通"}</span>
+        <span class="s18-route-span">${fromN} → ${toN}</span>
+        <span class="s18-route-fee">${feeText}</span>
+      </div>`;
+    }).join("");
+
+    return `<div class="s18-card">
+      <div class="s18-card-top">
+        <div><span class="s18-rank">候補${idx+1}</span></div>
+        <div class="s18-cost">+${p.cost.toLocaleString()}円</div>
+      </div>
+      <div class="s18-metrics">
+        <div>
+          <div class="m-label">所要時間</div>
+          <div class="m-value">${formatMinutesShort(p.time)}</div>
+        </div>
+        <div>
+          <div class="m-label">18きっぷのみ比 短縮時間</div>
+          <div class="m-value save">${saved>0 ? "-"+formatMinutesShort(saved) : "±0分"}</div>
+        </div>
+      </div>
+      <div class="s18-route">${routeHTML}</div>
+    </div>`;
+  }).join("");
+}
+
+
+/* ===============================================================
+   初期描画
+=============================================================== */
+
+render();
+
+
+
+
+</script>
+
+</body>
+</html>
